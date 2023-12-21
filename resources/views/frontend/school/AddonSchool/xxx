@@ -1,0 +1,139 @@
+@extends('layouts.school.master')
+
+@section('content')
+    <style>
+        .card.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+    <main class="page-content">
+        <div class="row">
+            @foreach ($addons as $addon)
+                <div class="col-xl-3">
+                    <div
+                        class="card @if ($addon->status == '0') disabled @endif radius-10 shadow p-3 mb-5 bg-body rounded hover-zoom">
+                        <div class="card-body p-0">
+
+                            <hr>
+
+                            <div class=" ">
+
+                                <center>
+                                    <p class="mb-2 text-black" style="font-size: 24px"> {{ $addon->title }}</p>
+                                </center>
+                                <center>
+                                    <h3 class="mb-2 text-black">{{ $addon->price }} ৳</h3>
+                                </center>
+                                {{-- <center>
+                                    <h5 class="mb-2 text-black">{{ $addon->button }}</h5>
+                                </center> --}}
+                            </div>
+
+                            <hr>
+                            <div class="col text-center">
+                                @if ($addon->button == 1)
+                                    {{-- <button class="btn btn-primary"
+                                        onclick="showModal('{{ $addon->id }}')">Purchase</button> --}}
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#addon{{ $addon->id }}">
+                                        Purchase
+                                    </button>
+                                    <!-- sure purchase Modal -->
+                                    <div class="modal fade" id="addon{{ $addon->id }}" tabindex="-1"
+                                        aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header" style="background-color:blueviolet;">
+                                                    <h5 class="modal-title" id="exampleModalLabel" style="color:white;">
+                                                        Addon purchase</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                        aria-label="Close" style="color:white;"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <form action="{{ route('SchoolAddon.Purchase') }}" method="post">
+                                                        @csrf
+                                                        <h5>Do you Really want to purchase <br> this Addon?</h5>
+                                                        <input type="hidden" name="addon_id" value="{{ $addon->id }}">
+                                                        <input type="hidden" name="price" value="{{ $addon->price }}">
+                                                        <input type="hidden" name="school_id"
+                                                            value="{{ authUser()->id }}">
+                                                        <input type="hidden" name="status" value="0">
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary btn-sm"
+                                                        data-bs-dismiss="modal">{{ __('app.no') }}</button>
+                                                    <button type="submit"
+                                                        class="btn btn-primary btn-sm">{{ __('app.yes') }}</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @else
+                                    <button class="btn btn-info">Free</button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            @endforeach
+        </div>
+    </main>
+
+
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true" style="height: 700px;">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content">
+                <div class="modal-body p-0 m-0">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function showModal(id) {
+
+            //console.log(addoncheckoutinfo);
+
+            $.ajax({
+                url: '/Addon/Checkout/School',
+                type: "POST",
+                data: {
+                    "_token": "{{ csrf_token() }}",
+                    addon_package_id: id
+                },
+                success: function(response) {
+                    console.log(response);
+                    // update modal content
+                    $('#myModal .modal-body').html(response);
+                    // show modal
+                    $('#myModal').modal('show');
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        }
+    </script>
+    {{-- <script>
+    function showModal(id) {
+        $.ajax({
+            url: '/Addon/Checkout/School/' + id, 
+            type: 'GET',
+            success: function(response) {
+                // Update the modal content with the fetched HTML
+                $('#myModal .modal-content').html(response);
+                // Show the modal
+                $('#myModal').modal('show');
+            }
+        });
+    }
+</script> --}}
+@endsection
