@@ -176,7 +176,14 @@
                     {{ number_format(($sum * 100) / $count, 2) }}
                 </td>
                 <td>{!! annualGrade(number_format(($sum * 100) / $count, 2)) !!}</td>
-                <td>{!! annualGpa(number_format(($sum * 100) / $count, 2)) !!}</td>
+                <td>
+                 @php
+                    $annualGPA = annualGpa(number_format(($sum * 100) / $count, 2));
+                    
+                    if($annualGPA == 0) $failed = true;
+                @endphp
+                {{ $annualGPA }}
+                </td>
                 @php
                 $totalGpa += annualGpa(number_format(($sum * 100) / $count, 2));
                 $finalGpa = number_format($totalGpa / count($subjects), 2);
@@ -192,8 +199,20 @@
                 <th>{{ $value }}</th>
                 @endforeach
                 <th>{{ number_format(($totalAvg / count($subjects)), 2) }}</th>
-                <th>{!! classWiseGpa($finalGpa) !!}</th>
-                <th> {{ $finalGpa }}</th>
+                <th>
+                    @if(isset($failed) && $failed == true)
+                        {!! classWiseGpa(0) !!}
+                    @else
+                        {!! classWiseGpa($finalGpa) !!}
+                    @endif
+                </th>
+                <th> 
+                    @if(isset($failed) && $failed == true)
+                        0
+                    @else
+                        {{ $finalGpa }}
+                    @endif
+                </th>
             </tr>
         </tbody>
     </table>
