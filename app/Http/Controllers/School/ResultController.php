@@ -11,6 +11,7 @@ use App\Models\Result;
 use App\Models\ResultSetting;
 use App\Models\ResultSubjectCountableMark;
 use App\Models\Section;
+use App\Models\Subject;
 use App\Models\Term;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -126,9 +127,6 @@ class ResultController extends Controller
      */
     public function showClassWiseResult(Request $request)
     {
-
-        // return request();
-
         if (hasPermission('see_result')) {
             $seoTitle = 'Result';
             $seoDescription = 'Result';
@@ -215,7 +213,8 @@ class ResultController extends Controller
                 }
 
                 if ($request->result_type == 'all_student') {
-                    $students_id = Result::where('institute_class_id', $request->final_wise_class_id)->whereIn('term_id', $term_id)->pluck('student_id')->unique();
+                    $students_id = Result::where('institute_class_id', $request->final_wise_class_id)->whereIn('term_id', $term_id)
+                                          ->orderBy('student_id', 'ASC')->pluck('student_id')->unique();
 
 
                     $final_student_wise_student_id = $request->final_student_wise_student_id;
@@ -223,17 +222,43 @@ class ResultController extends Controller
 
                     return view('frontend.school.result.all_Term_Result', compact('term_id', 'students_id', 'final_wise_class_id'));
                 } else {
-
+                    
                     $studentResults = Result::where('school_id', authUser()->id)->where('institute_class_id', $request->final_wise_class_id)
                     ->where('student_id', $request->final_student_wise_student_id)
                     ->whereIn('term_id', $term_id)
-                    ->orderBy('term_id','ASC')
-                    ->get();
+                                            ->orderBy('term_id','ASC')
+                                            ->orderBy('updated_at', 'ASC')
+                                            ->get();
 
                     $subjects = [];
-        
+
+                    $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+                    $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+                    $optional_main_subject = 127;
+                    $my_group_id = $studentResults->first()->user?->group_id;
+
+                    if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+                        /* Hridoy
+                        * 126 = Higher Math
+                        * 138 = Biology
+                        * 134 = Agriculture Studies
+                        * 152 = Finance & Banking
+                        * Group 1 = Science
+                        */
+                        if($my_group_id == 1) {
+                            if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                            elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                            elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
+                        }
+                    }
+
                     foreach ($studentResults as $key => $result) {
-                        if(!is_null($result->term)){
+                        if(!is_null($result->term) && !is_null($result->subject)
+                        &&
+                        (in_array($result->subject->group_id, [0, $my_group_id])
+                        || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+                        || ($optional_main_subject ?? '') == $result->subject?->subject_code
+                        )){
                             $subjects[$result->subject->subject_name][$result->term->title] = [
                                 'subject_id'  => $result->subject_id,
                                 'total' => $result->total,
@@ -247,6 +272,7 @@ class ResultController extends Controller
                     $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
                                     ->where('school_id', authUser()->id)
                                     ->where('institute_class_id', $request->final_wise_class_id)
+                                    ->whereIn('term_id', $term_id)
                                     ->orderByDesc('finalTotal')
                                     ->groupBy('student_id')
                                     ->get();
@@ -265,7 +291,8 @@ class ResultController extends Controller
 
                     return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank','seo_array'));
                 }
-            } else {
+            }
+             else {
                 $request->validate(
                     [
                         'class_wise_class_id' => 'required',
@@ -406,6 +433,7 @@ class ResultController extends Controller
         }
     }
 
+    # Hridoy
     public function get_all_students_results($final_wise_class_id, $final_student_wise_student_id, $term_id)
     {
         $term_id = json_decode($term_id);
@@ -414,41 +442,70 @@ class ResultController extends Controller
             ->where('student_id', $final_student_wise_student_id)
             ->whereIn('term_id', $term_id)
             ->orderBy('term_id', 'ASC')
+            ->orderBy('updated_at', 'ASC')
             ->get();
             
         $subjects = [];
 
+        $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+        $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+        $optional_main_subject = 127;
+        $my_group_id = $studentResults->first()->user?->group_id;
+
+        if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+            /* Hridoy
+            * 126 = Higher Math
+            * 138 = Biology
+            * 134 = Agriculture Studies
+            * 152 = Finance & Banking
+            * Group 1 = Science
+            */
+            if($my_group_id == 1) {
+                if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
+            }
+        }
+
         foreach ($studentResults as $key => $result) {
-            if (!is_null($result->term)) {
+            if(!is_null($result->term) && !is_null($result->subject)
+            &&
+            (in_array($result->subject->group_id, [0, $my_group_id]) 
+            || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+            || ($optional_main_subject ?? '') == $result->subject?->subject_code
+            )){
                 $subjects[$result->subject->subject_name][$result->term->title] = [
                     'subject_id'  => $result->subject_id,
                     'total' => $result->total,
                     'written' => $result->written,
                     'mcq' => $result->mcq,
-                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others + $result->uniform + $result->midterm + $result->handwriting + $result->paynumber + $result->semester,
+                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
                 ];
             }
         }
 
-        $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
+        $rank = Result::select('student_id', 'attend_days')->selectRaw("SUM(total) as finalTotal")
                         ->where('school_id', authUser()->id)
                         ->where('institute_class_id', $final_wise_class_id)
+                        ->whereIn('term_id', $term_id)
                         ->orderByDesc('finalTotal')
-                        ->groupBy('student_id')
+                        ->orderByDesc('attend_days')
+                        ->groupBy('student_id', 'attend_days')
                         ->get();
-    
-        $studentRank    = $rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
+
+        $studentRank = $rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
 
         $section = User::find($final_student_wise_student_id);
-        $section_rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
+        $section_rank = Result::select('student_id','attend_days')->selectRaw("SUM(total) as finalTotal")
                         ->where('school_id', authUser()->id)
                         ->where('institute_class_id', $final_wise_class_id)
                         ->where('section_id', $section->section_id)
+                        ->whereIn('term_id', $term_id)
                         ->orderByDesc('finalTotal')
-                        ->groupBy('student_id')
+                        ->orderByDesc('attend_days')
+                        ->groupBy('student_id','attend_days')
                         ->get();
         $section_studentRank = $section_rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
-
 
         return view('frontend.school.result.components.all_term_result_print', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank'));
     }

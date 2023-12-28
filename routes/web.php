@@ -40,6 +40,7 @@ use App\Http\Controllers\Lib\LanguageDetectController;
 use App\Http\Controllers\School\AttendanceReportController;
 use App\Http\Controllers\School\CertificateController;
 use App\Http\Controllers\Finance\CollectFeesController;
+use LDAP\Result;
 
 // include frontend routes
 include_once 'frontend.php';

@@ -132,6 +132,7 @@
             @endforeach
             @endforeach
             @foreach ($subjects as $key => $subject )
+
             <tr>
                 <td>{{ $key }}</td>
                 <td>100</td>
@@ -177,7 +178,7 @@
                 </td>
                 <td>{!! annualGrade(number_format(($sum * 100) / $count, 2)) !!}</td>
                 <td>
-                 @php
+                @php
                     $annualGPA = annualGpa(number_format(($sum * 100) / $count, 2));
                     
                     if($annualGPA == 0) $failed = true;
@@ -190,6 +191,7 @@
                 $totalAvg += number_format(($sum * 100) / $count, 2);
                 @endphp
             </tr>
+
             @endforeach
             @php
             @endphp

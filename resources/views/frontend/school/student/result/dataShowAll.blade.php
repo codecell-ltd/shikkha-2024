@@ -118,7 +118,7 @@
                                                                                     <!-- This line will compress the number query (1320) -->
                                                                                     <input {{ $term_and_subject_wise_result?->absent == 1 ? '' : '' }} type="number" step="0.01" min="0" class="form-control input-mark{{ $student->id }}{{ $tabName->id }}"
                                                                                     onfocus="this.value == 0 ? this.value = '' : this.value = this.value"
-                                                                                    onkeyup="markValidation('{{ $student->id }}', '{{ $tabName->id }}', '{{ subjectMark($termName->id, $student->class_id, $tabName->id) }}');" name="{{ $markType->mark_type }}[]" value="{{ $marks }}">
+                                                                                    onkeyup="markValidation('{{ $student->id }}', '{{ $tabName->id }}', '{{ subjectMark($termName->id, $student->class_id, $tabName->id) }}');" name="{{ $markType->mark_type }}[]" value="{{ $marks ?? 0 }}">
                                                                                 </div>
                                                                             </td>
                                                                             @endforeach

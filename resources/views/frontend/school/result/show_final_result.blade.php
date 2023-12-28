@@ -147,75 +147,80 @@
                                                 @endphp
                                             @endforeach
                                         @endforeach
-                                        @foreach ($subjects as $key => $subject )
-                                        <tr>
-                                            <td>{{ $key }}</td>
-                                            <td>100</td>
-                                            <td>33</td>
-                                            @php
-                                                $sum = 0;
 
-                                            @endphp
-
-                                            @foreach ($subject as $k => $v)
+                                        @foreach ($subjects as $key => $subject)
+                                            
+                                            <tr>
+                                                <td>{{ $key }}</td>
+                                                <td>100</td>
+                                                <td>33</td>
                                                 @php
-                                                    $total[$k] += $v['total'];
-                                                    $sum += $v['total'];
-                                                    $subject_id = $v['subject_id'];
-                                                    $class_id = $studentResults->first()->user?->class_id;
-                                                    $totalTermMark = \App\Models\ResultSubjectCountableMark::where('school_id', authUser()->id)->where('institute_class_id', $class_id)->whereIn('result_setting_id', $term_id)->where('subject_id', $subject_id)->selectRaw("SUM(mark) as term_total_mark")->first();
-                                                    $count = $totalTermMark->term_total_mark;
+                                                    $sum = 0;
                                                 @endphp
-                                                @if ($v['total'] != 0)
-                                                    <td class="p-0">
-                                                        <table class="table table-bordered m-0">
-                                                            <tr>
-                                                                <td width="25%">{{ $v['written'] }}</td>
-                                                                <td width="25%">{{ $v['mcq'] }}</td>
-                                                                <td width="25%">{{ $v['other'] }}</td>
-                                                                <td width="25%">{{ $v['total'] }}</td>
-                                                            </tr>
-                                                        </table>
-                                                    </td>
-                                                @else
-                                                    <td class="p-0">
-                                                        <table class="m-0 table table-bordered">
-                                                            <tr>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                            </tr>
-                                                        </table>
-                                                    </td>
-                                                @endif
-                                            @endforeach
-                                        <td>
-                                            {{ number_format(($sum * 100) / $count, 2) }}
-                                        </td>
-                                        <td>{!! annualGrade(number_format(($sum * 100) / $count, 2)) !!}</td>
-                                        <td>
-                                            @php
-                                                $annualGPA = annualGpa(number_format(($sum * 100) / $count, 2));
-                                                
-                                                if($annualGPA == 0) $failed = true;
-                                            @endphp
-                                            {{ $annualGPA }}
-                                        </td>
-                                        @php
-                                            $totalGpa += annualGpa(number_format(($sum * 100) / $count, 2));
-                                            $finalGpa = number_format($totalGpa / count($subjects), 2);
-                                            $totalAvg += number_format(($sum * 100) / $count, 2);
-                                        @endphp
-                                        </tr>
+
+                                                @foreach ($subject as $k => $v)
+                                                    @php
+                                                        $total[$k] += $v['total'];
+                                                        $sum += $v['total'];
+                                                        $subject_id = $v['subject_id'];
+                                                        $class_id = $studentResults->first()->user?->class_id;
+                                                        $totalTermMark = \App\Models\ResultSubjectCountableMark::where('school_id', authUser()->id)->where('institute_class_id', $class_id)->whereIn('result_setting_id', $term_id)->where('subject_id', $subject_id)->selectRaw("SUM(mark) as term_total_mark")->first();
+                                                        $count = $totalTermMark->term_total_mark;
+                                                    @endphp
+                                                    @if ($v['total'] != 0)
+                                                        <td class="p-0">
+                                                            <table class="table table-bordered m-0">
+                                                                <tr>
+                                                                    <td width="25%">{{ $v['written'] }}</td>
+                                                                    <td width="25%">{{ $v['mcq'] }}</td>
+                                                                    <td width="25%">{{ $v['other'] }}</td>
+                                                                    <td width="25%">{{ $v['total'] }}</td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    @else
+                                                        <td class="p-0">
+                                                            <table class="m-0 table table-bordered">
+                                                                <tr>
+                                                                    <td width="25%"><br></td>
+                                                                    <td width="25%"><br></td>
+                                                                    <td width="25%"><br></td>
+                                                                    <td width="25%"><br></td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    @endif
+                                                @endforeach
+                                                <td>
+                                                    {{ number_format(($sum * 100) / $count, 2) }}
+                                                </td>
+                                                <td>{!! annualGrade(number_format(($sum * 100) / $count, 2)) !!}</td>
+                                                <td>
+                                                    @php
+                                                        $annualGPA = annualGpa(number_format(($sum * 100) / $count, 2));
+                                                        
+                                                        if($annualGPA == 0) $failed = true;
+                                                    @endphp
+                                                    {{ $annualGPA }}
+                                                </td>
+                                                @php
+                                                    $totalGpa += annualGpa(number_format(($sum * 100) / $count, 2));
+                                                    $finalGpa = number_format($totalGpa / count($subjects), 2);
+                                                    $totalAvg += number_format(($sum * 100) / $count, 2);
+                                                @endphp
+                                            </tr>
+
                                         @endforeach
+
                                         @php
                                         @endphp
                                         <tr>
                                             <th colspan="3">Total Mark And GPA</th>
-                                            @foreach ($total as $value)
-                                                <th>{{ $value }}</th>
-                                            @endforeach
+                                            @if ($total)
+                                                @foreach ($total as $value)
+                                                    <th>{{ $value }}</th>
+                                                @endforeach
+                                            @endif
                                             <th>{{ number_format(($totalAvg / count($subjects)), 2) }}</th>
                                             <th>
                                                 @if(isset($failed) && $failed == true)
@@ -304,15 +309,14 @@
     
                                         <div>
                                             <table class=" table table-bordered text-center" style="font-size: 12px; border-color:black;">
-    
                                                 <tbody>
                                                     <tr class="row">
                                                         <td class="col-8 border-end-0" style="padding:2px;">Position in class</td>
-                                                        <td class="col-4" style="padding:2px;">{{(isset($resultStatus)) ? ' ' : $studentRank}}</td>
+                                                        <td class="col-4" style="padding:2px;">{{ $studentRank }}</td>
                                                     </tr>
                                                     <tr class="row">
                                                         <td class="col-8 border-end-0 border-top-0" style="padding:2px;">Position in section</td>
-                                                        <td class="col-4" style="padding:2px;">{{(isset($resultStatus)) ? ' ' : $section_studentRank}}</td>
+                                                        <td class="col-4" style="padding:2px;">{{ $section_studentRank }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
