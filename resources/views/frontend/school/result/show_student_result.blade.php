@@ -125,11 +125,11 @@
                                 <th scope="col">Full Mark</th>
                                 <th scope="col">Pass Marks</th>
                                 @foreach ($markType as $data)
-                                @if ($data->mark_type == 'Class_Test')
-                                <th>CT</th>
-                                @else
-                                <th>{{$data->mark_type}}</th>
-                                @endif
+                                    @if ($data->mark_type == 'Class_Test')
+                                        <th>CT</th>
+                                    @else
+                                        <th>{{$data->mark_type}}</th>
+                                    @endif
                                 @endforeach
                                 <th scope="col">Total Marks</th>
                                 <th scope="col">Grade</th>
@@ -138,131 +138,126 @@
                         </thead>
                         <tbody style="padding:0px;">
                             @php
-                            $total = 0;
-                            $totalGpa = 0.000;
-                            // $totalSubject = count($studentResults); //Permanent
-                            $totalSubject = 0; //Temporay
-
+                                $total = 0;
+                                $totalGpa = 0.000;
+                                $totalSubject = 0;
                             @endphp
 
                             @foreach ($studentResults as $result)
-                            @if ($result->absent == 1 || $result->total != 0)
-                            @php
-                            $totalSubject += 1; //Temporary
-                            $term_id = $term->id;
-                            $class_id = $result->institute_class_id;
-                            $subject_id = $result->subject_id;
-                            $current_pass_mark = ($term->pass_mark / 100) * subjectMark($term_id, $class_id, $subject_id);
-                            $pass_mark = ($current_pass_mark * 100) / subjectMark($term_id, $class_id, $subject_id);
-                            @endphp
+                                @if ($result->absent == 1 || $result->total != 0)
+                                    @php
+                                        $totalSubject += 1; //Temporary
+                                        $term_id = $term->id;
+                                        $class_id = $result->institute_class_id;
+                                        $subject_id = $result->subject_id;
+                                        $current_pass_mark = ($term->pass_mark / 100) * subjectMark($term_id, $class_id, $subject_id);
+                                        $pass_mark = ($current_pass_mark * 100) / subjectMark($term_id, $class_id, $subject_id);
+                                    @endphp
+
                             <tr>
                                 @if(!is_null($result?->subject))
-                                @if($result?->subject?->subject_name == 'Information and Communication Technology')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">ICT</td>
-                                @elseif($result->subject->subject_name == 'Bangla First Paper')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">Bangla 1st Paper</td>
-                                @elseif($result->subject->subject_name == 'Bangla Second paper')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">Bangla 2nd Paper</td>
-                                @elseif($result->subject->subject_name == 'English First Paper')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">English 1st Paper</td>
-                                @elseif($result->subject->subject_name == 'English Second Paper')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">English 2nd Paper</td>
-                                @elseif($result->subject->subject_name == 'Islam/ Other Religions')
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">Islam/ Other</td>
-                                @else
-                                <td width="300px;" scope="row" style="padding: 1px; color:black;">{{ $result->subject->subject_name }}</td>
-                                @endif
+                                    @if($result?->subject?->subject_name == 'Information and Communication Technology')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">ICT</td>
+                                    @elseif($result->subject->subject_name == 'Bangla First Paper')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">Bangla 1st Paper</td>
+                                    @elseif($result->subject->subject_name == 'Bangla Second paper')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">Bangla 2nd Paper</td>
+                                    @elseif($result->subject->subject_name == 'English First Paper')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">English 1st Paper</td>
+                                    @elseif($result->subject->subject_name == 'English Second Paper')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">English 2nd Paper</td>
+                                    @elseif($result->subject->subject_name == 'Islam/ Other Religions')
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">Islam/ Other</td>
+                                    @else
+                                    <td width="300px;" scope="row" style="padding: 1px; color:black;">{{ $result->subject->subject_name }}</td>
+                                    @endif
 
 
-                                <td style="padding: 0px; color:black;">{{ subjectMark($term_id, $class_id, $subject_id) }}</td>
-                                <td style="padding: 0px; color:black;">{{ number_format($current_pass_mark, 0) }}</td>
-                                @foreach ($markType as $data)
-                                @if($data->mark_type == 'Attendance')
-                                <td style="padding: 0px; color:black;">{{$result->attendance}}</td>
-                                @elseif($data->mark_type == 'Written')
-                                <td style="padding: 0px; color:black;">{{$result->written}}</td>
-                                @elseif($data->mark_type == 'MCQ')
-                                <td style="padding: 0px; color:black;">{{$result->mcq}}</td>
-                                @elseif($data->mark_type == 'Assignment')
-                                <td style="padding: 0px; color:black;">{{$result->assignment}}</td>
-                                @elseif($data->mark_type == 'Presentation')
-                                <td style="padding: 0px; color:black;">{{$result->presentation}}</td>
-                                @elseif($data->mark_type == 'Quiz')
-                                <td style="padding: 0px; color:black;">{{$result->quiz}}</td>
-                                @elseif($data->mark_type == 'Practical')
-                                <td style="padding: 0px; color:black;">{{$result->practical}}</td>
-                                @elseif($data->mark_type == 'HandWriting')
-                                <td style="padding: 0px; color:black;">{{$result->handwriting}}</td>
-                                @elseif($data->mark_type == 'Midterm')
-                                <td style="padding: 0px; color:black;">{{$result->midterm}}</td>
-                                @elseif($data->mark_type == 'Semester')
-                                <td style="padding: 0px; color:black;">{{$result->semester}}</td>
-                                @elseif($data->mark_type == 'UniForm')
-                                <td style="padding: 0px; color:black;">{{$result->uniform}}</td>
-                                @elseif($data->mark_type == 'PayNumber')
-                                <td style="padding: 0px; color:black;">{{$result->paynumber}}</td>
-                                @elseif($data->mark_type == 'Others')
-                                <td style="padding: 0px; color:black;">{{$result->others}}</td>
-                                @elseif ($data->mark_type == 'Class_Test')
-                                <td style="padding: 0px; color:black;">{{$result->class_test}}</td>
-                                @endif
-                                @endforeach
+                                    <td style="padding: 0px; color:black;">{{ subjectMark($term_id, $class_id, $subject_id) }}</td>
+                                    <td style="padding: 0px; color:black;">{{ number_format($current_pass_mark, 0) }}</td>
+                                    @foreach ($markType as $data)
+                                        @if($data->mark_type == 'Attendance')
+                                            <td style="padding: 0px; color:black;">{{$result->attendance}}</td>
+                                        @elseif($data->mark_type == 'Written')
+                                            <td style="padding: 0px; color:black;">{{$result->written}}</td>
+                                        @elseif($data->mark_type == 'MCQ')
+                                            <td style="padding: 0px; color:black;">{{$result->mcq}}</td>
+                                        @elseif($data->mark_type == 'Assignment')
+                                            <td style="padding: 0px; color:black;">{{$result->assignment}}</td>
+                                        @elseif($data->mark_type == 'Presentation')
+                                            <td style="padding: 0px; color:black;">{{$result->presentation}}</td>
+                                        @elseif($data->mark_type == 'Quiz')
+                                            <td style="padding: 0px; color:black;">{{$result->quiz}}</td>
+                                        @elseif($data->mark_type == 'Practical')
+                                            <td style="padding: 0px; color:black;">{{$result->practical}}</td>
+                                        @elseif($data->mark_type == 'HandWriting')
+                                            <td style="padding: 0px; color:black;">{{$result->handwriting}}</td>
+                                        @elseif($data->mark_type == 'Midterm')
+                                            <td style="padding: 0px; color:black;">{{$result->midterm}}</td>
+                                        @elseif($data->mark_type == 'Semester')
+                                            <td style="padding: 0px; color:black;">{{$result->semester}}</td>
+                                        @elseif($data->mark_type == 'UniForm')
+                                            <td style="padding: 0px; color:black;">{{$result->uniform}}</td>
+                                        @elseif($data->mark_type == 'PayNumber')
+                                            <td style="padding: 0px; color:black;">{{$result->paynumber}}</td>
+                                        @elseif($data->mark_type == 'Others')
+                                            <td style="padding: 0px; color:black;">{{$result->others}}</td>
+                                        @elseif ($data->mark_type == 'Class_Test')
+                                            <td style="padding: 0px; color:black;">{{$result->class_test}}</td>
+                                        @endif
+                                    @endforeach
                                 <td style="padding: 0px; color:black;">{{ $result->total }}</td>
                                 <td style="padding: 0px; color:black;">{{ $result->grade }}</td>
                                 <td style="padding: 0px; color:black;">{{ $result->gpa }}</td>
                                 @endif
                             </tr>
                             @php
-                            $total += $result->total;
-                            $totalGpa += $result->gpa;
+                                $total += $result->total;
+                                $totalGpa += $result->gpa;
 
-                            if (isset($optionalSubject) && $optionalSubject != null) {
-                            $optionalSubjectId = \App\Models\Subject::where('school_id', authUser()->id)?->where('class_id', $class_id)?->whereIn('subject_code', $optionalSubject)?->get()?->pluck('id')?->toArray();
-                            $optionalResult = $studentResults->whereIn('subject_id', $optionalSubjectId)?->first();
-                            // dd($result?->subject_id);
-                            // dd($optionalResult);
-                            $not = $optionalResult?->subject_id == $result?->subject_id;
-                            if (!$not) {
-                            if ($result->gpa == 0 && $result->grade == 'F') {
-                            $resultStatus = "Fail";
-                            }
-                            }
-                            }
-                            else {
-                            if ($result->gpa == 0 && $result->grade == 'F') {
-                            $resultStatus = "Fail";
-                            }
-                            }
+                                if (isset($optionalSubject) && $optionalSubject != null) {
+                                    $optionalSubjectId = \App\Models\Subject::where('school_id', authUser()->id)?->where('class_id', $class_id)?->whereIn('subject_code', $optionalSubject)?->get()?->pluck('id')?->toArray();
+                                    $optionalResult = $studentResults->whereIn('subject_id', $optionalSubjectId)?->first();
+                                    $not = $optionalResult?->subject_id == $result?->subject_id;
+                                    if (!$not) {
+                                        if ($result->gpa == 0 && $result->grade == 'F') {
+                                            $resultStatus = "Fail";
+                                        }
+                                    }
+                                }else{
+                                    if ($result->gpa == 0 && $result->grade == 'F') {
+                                        $resultStatus = "Fail";
+                                    }
+                                }
 
                             @endphp
                             @endif
                             @endforeach
 
                             @php
-                            $optionalSubject = $studentResults->first()->user?->optional_subject;
-                            if (in_array($studentResults->first()->user?->class?->class_name, classFilter()) && $optionalSubject != null) {
-                            $totalSubject = $totalSubject - 1;
-                            $optionalSubjectId = \App\Models\Subject::where('school_id', authUser()->id)->where('class_id', $class_id)->whereIn('subject_code', $optionalSubject)->get()->pluck('id')->toArray();
-                            // @dd($optionalSubjectId);
-                            $optionalResult = $studentResults->whereIn('subject_id', $optionalSubjectId)->first();
+                                $optionalSubject = $studentResults->first()->user?->optional_subject;
+                                if (in_array($studentResults->first()->user?->class?->class_name, classFilter()) && $optionalSubject != null) {
+                                    $totalSubject = $totalSubject - 1;
+                                    $optionalSubjectId = \App\Models\Subject::where('school_id', authUser()->id)->where('class_id', $class_id)->whereIn('subject_code', $optionalSubject)->get()->pluck('id')->toArray();
+                                    $optionalResult = $studentResults->whereIn('subject_id', $optionalSubjectId)->first();
 
-                            $totalGpa = $totalGpa - $optionalResult?->gpa;
-                            $addOptionalPoint = $optionalResult?->gpa - 2;
-                            $addOptionalPoint = $addOptionalPoint < 0 ? 0 : $addOptionalPoint; $totalGpa=$totalGpa + $addOptionalPoint; $averageGpa=number_format($totalGpa / $totalSubject, 2); $averageGpa=$averageGpa> 5 ? 5 : $averageGpa;
+                                    $totalGpa = $totalGpa - $optionalResult?->gpa;
+                                    $addOptionalPoint = $optionalResult?->gpa - 2;
+                                    $addOptionalPoint = $addOptionalPoint < 0 ? 0 : $addOptionalPoint; $totalGpa=$totalGpa + $addOptionalPoint; $averageGpa=number_format($totalGpa / $totalSubject, 2); $averageGpa=$averageGpa> 5 ? 5 : $averageGpa;
                                 }
                                 else {
-                                $averageGpa = number_format($totalGpa / $totalSubject, 2);
+                                    $averageGpa = number_format($totalGpa / $totalSubject, 2);
                                 }
 
-                                $grading_point = array(
-                                'A+' => 5, 'A' => 4, 'A-' => 3.5, 'B' => 3, 'C' => 2, 'D' => 1, 'F' => 0
-                                );
+                                    $grading_point = array(
+                                    'A+' => 5, 'A' => 4, 'A-' => 3.5, 'B' => 3, 'C' => 2, 'D' => 1, 'F' => 0
+                                    );
 
-                                foreach ($grading_point as $gpa => $minimum_grade) {
-                                if ($averageGpa >= $minimum_grade) {
-                                $gpa_point = $gpa;
-                                break;
-                                }
+                                    foreach ($grading_point as $gpa => $minimum_grade) {
+                                    if ($averageGpa >= $minimum_grade) {
+                                    $gpa_point = $gpa;
+                                    break;
+                                    }
                                 }
 
                                 @endphp
@@ -337,7 +332,7 @@
 
                                     <tbody>
                                         @php
-                                        $total_working_days = get_custom_attendance($studentResults->first()->user?->id);
+                                            $total_working_days = get_custom_attendance($studentResults->first()->user?->id);
                                         @endphp
                                         <tr class="row">
                                             <td class="col-8 border-end-0" style="border-bottom-color: white;" style="padding:2px;">Total Working Days</td>
@@ -361,7 +356,6 @@
                                     <tbody>
                                         <tr class="row">
                                             <td class="col-8 border-end-0" style="padding:2px;">Position in Class</td>
-                                            {{-- @dd($studentResults->first()->user?->id) --}}
                                             <td class="col-4" style="padding:2px;">{{ singleStudentRank($class_id, $term_id, $studentResults->first()->user?->id) }}</td>
                                         </tr>
                                         <tr class="row">

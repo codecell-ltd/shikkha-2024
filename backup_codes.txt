@@ -1,87 +1,4 @@
-@php
-    $resultHaveorNot = getResultHaveorNot($data->id, $tabName->id, $termName->id);
-    $resultHaveorNotById = getResultHaveorNotById($data->id, $tabName->id, $termName->id);
-    $subjectTotalMark = 0;
-@endphp
-
-<input type="hidden" class="form-control" name="student_id[]" value="{{ $data->id }}">
-<input type="hidden" class="form-control" name="student_roll_number[]" value="{{ $data->roll_number }}">
-<input type="hidden" class="form-control" name="subject_id" value="{{ $tabName->id }}">
-<input type="hidden" class="form-control" name="term_id" value="{{ $termName->id }}">
-<input type="hidden" class="form-control" name="class_id" value="{{ $data->class_id }}">
-<input type="hidden" class="form-control" name="section_id" value="{{ $section_id }}">
-
-@foreach ($markTypes as $markType)
-
-<td>
-    <div class="col-md-12">
-        <input type="number" step="0.01" class="form-control input-mark{{ $data->id }}{{ $tabName->id }}" onkeyup="markValidation('{{ $data->id }}', '{{ $tabName->id }}', '{{ subjectMark($termName->id, $data->class_id, $tabName->id) }}');" name="{{ $markType->mark_type }}[]" value="{{ getResultMarks($data->id, $tabName->id, $termName->id, $markType->mark_type) == null ? '' : getResultMarks($data->id, $tabName->id, $termName->id, $markType->mark_type) }}">
-    </div>
-</td>
-@php
-$subjectTotalMark += getResultMarks($data->id, $tabName->id, $termName->id, $markType->mark_type);
-$result = $data?->result?->where('student_id', $data->id)->where('term_id', $termName->id)->where('subject_id', $tabName->id)->first();
-@endphp
-@endforeach
-
-@php
-// $totalMark = ($subjectTotalMark * 100) / $termName->total_mark;
-if(subjectMark($termName->id, $data->class_id, $tabName->id) == 350) {
-$modal = '<div id="myModal" class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title text-warning">Attention: Save Subject Marks!!</h5>
-            </div>
-            <div class="modal-body">
-                <h3 class="text-info">Please ensure to save the <br> subject marks before input result.</h3>
-            </div>
-            <div class="modal-footer">
-                <button id="subjectMark" class="btn btn-secondary">Input Mark</button>
-            </div>
-        </div>
-    </div>
-</div>';
-echo $modal;
-}
-
-$current_pass_mark = ($termName->pass_mark / 100) * subjectMark($termName->id, $data->class_id, $tabName->id);
-$pass_mark = ($current_pass_mark * 100) / subjectMark($termName->id, $data->class_id, $tabName->id);
-$totalMark = ($subjectTotalMark * 100) / subjectMark($termName->id, $data->class_id, $tabName->id);
-
-$markInvalid = $totalMark > 100 || $totalMark < 0; if ($markInvalid) { $invalidMsg='Mark is invalid' ; } @endphp <td>
-    <h5 style="margin-top: 5px;">
-        {{ ($markInvalid) ? $invalidMsg : ((isset($result->grade)) ? $result->grade : "F") }}
-    </h5>
-    </td>
-    <td>
-        <h5 style="margin-top: 5px;">
-            {{ ($markInvalid) ? $invalidMsg : ((isset($result->gpa)) ? $result->gpa : "0") }}
-        </h5>
-    </td>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    -------------------------------------
-    <?php
+<?php
 
 namespace App\Http\Controllers\School;
 
@@ -94,6 +11,7 @@ use App\Models\Result;
 use App\Models\ResultSetting;
 use App\Models\ResultSubjectCountableMark;
 use App\Models\Section;
+use App\Models\Subject;
 use App\Models\Term;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -109,10 +27,10 @@ class ResultController extends Controller
      * @return \Illuminate\Contracts\View\View
      */
     public function classWiseResult()
-    {  
-        if(hasPermission('result_upload_show')) {
+    {
+        if (hasPermission('result_upload_show')) {
             $seoTitle = 'Result Search Page';
-            $seoDescription = 'Result Search Page' ;
+            $seoDescription = 'Result Search Page';
             $seoKeyword = 'Result Search Page';
             $seo_array = [
                 'seoTitle' => $seoTitle,
@@ -120,12 +38,10 @@ class ResultController extends Controller
                 'seoDescription' => $seoDescription,
             ];
             $class = InstituteClass::where('school_id', authUser()->id)->get();
-            $terms = ResultSetting::where('school_id', authUser()->id)->orderBy('id','desc')->get();
+            $terms = ResultSetting::where('school_id', authUser()->id)->orderBy('id', 'desc')->get();
             $users = User::where('school_id', authUser()->id)->get();
-            return view('frontend.school.result.class_wise_result', compact('class', 'terms','seo_array'));
-        
-        }
-        else{
+            return view('frontend.school.result.class_wise_result', compact('class', 'terms', 'seo_array'));
+        } else {
             return back();
         }
     }
@@ -140,35 +56,41 @@ class ResultController extends Controller
      */
     public function studentResultAbsent(Request $request)
     {
-        if(hasPermission('result_upload_show')) {
-            Result::updateOrCreate([
-                'school_id'             => authUser()->id,
-                'student_id'            => $request->student_id,
-                'student_roll_number'   => $request->roll_number,
-                'institute_class_id'    => $request->class_id,
-                'section_id'            => $request->section_id,
-                'subject_id'            => $request->subject_id,
-                'term_id'               => $request->term_id
-            ],
-            [
-                'attendance'            => 0,
-                'assignment'            => 0,
-                'class_test'            => 0,
-                'presentation'          => 0,
-                'quiz'                  => 0,
-                'practical'             => 0,
-                'written'               => 0,
-                'mcq'                   => 0,
-                'others'                => 0,
-                'total'                 => 0,
-                'grade'                 => 'F',
-                'gpa'                   => 0,
-                'absent'                => 1
-            ]);
+        if (hasPermission('result_upload_show')) {
+            Result::updateOrCreate(
+                [
+                    'school_id'             => authUser()->id,
+                    'student_id'            => $request->student_id,
+                    'student_roll_number'   => $request->roll_number,
+                    'institute_class_id'    => $request->class_id,
+                    'section_id'            => $request->section_id,
+                    'subject_id'            => $request->subject_id,
+                    'term_id'               => $request->term_id
+                ],
+                [
+                    'attendance'            => 0,
+                    'assignment'            => 0,
+                    'class_test'            => 0,
+                    'presentation'          => 0,
+                    'quiz'                  => 0,
+                    'practical'             => 0,
+                    'written'               => 0,
+                    'mcq'                   => 0,
+                    'others'                => 0,
+                    'midterm'               => 0,
+                    'handwriting'           => 0,
+                    'paynumber'             => 0,
+                    'semester'              => 0,
+                    'uniform'               => 0,
+                    'total'                 => 0,
+                    'grade'                 => 'F',
+                    'gpa'                   => 0,
+                    'absent'                => 1
+                ]
+            );
 
             return response()->json(['status' => 'success']);
-        }
-        else{
+        } else {
             return back();
         }
     }
@@ -179,8 +101,8 @@ class ResultController extends Controller
      * @param $id
      */
     public function classWiseUser(Request $request)
-    {  
-        if(hasPermission('result_upload_show')) {
+    {
+        if (hasPermission('result_upload_show')) {
             $users = User::where('school_id', authUser()->id)->where('class_id', $request->class_id)->get()->groupBy('section_id');
 
             $students = [];
@@ -189,13 +111,11 @@ class ResultController extends Controller
                     $students[getSectionName($section_id)->section_name][$userName['id']] = $userName['name'];
                 }
             }
-            
+
             return response()->json($students);
-        }
-        else{
+        } else {
             return back();
         }
-        
     }
 
     /**
@@ -206,10 +126,10 @@ class ResultController extends Controller
      * @return
      */
     public function showClassWiseResult(Request $request)
-    {   
-        if(hasPermission('see_result')){
+    {
+        if (hasPermission('see_result')) {
             $seoTitle = 'Result';
-            $seoDescription = 'Result' ;
+            $seoDescription = 'Result';
             $seoKeyword = 'Result';
             $seo_array = [
                 'seoTitle' => $seoTitle,
@@ -229,175 +149,256 @@ class ResultController extends Controller
                         'student_wise_term_id.required' => 'Term Section Required',
                     ]
                 );
-                
+
                 $checkTotalMark = DB::table('results')
-                                        ->where('school_id', authUser()->id)
-                                        ->where('institute_class_id', $request->student_wise_class_id)
-                                        ->where('student_id', $request->student_wise_student_id)
-                                        ->where('term_id', $request->student_wise_term_id)
-                                        ->sum('total');
-                                     
-                if($checkTotalMark > 0){     
+                    ->where('school_id', authUser()->id)
+                    ->where('institute_class_id', $request->student_wise_class_id)
+                    ->where('student_id', $request->student_wise_student_id)
+                    ->where('term_id', $request->student_wise_term_id)
+                    ->sum('total');
+
+                if ($checkTotalMark > 0) {
                     $markType = MarkType::where('institute_classes_id', $request->student_wise_class_id)
-                                        ->where('school_id', authUser()->id)->orderBy('id', 'Asc')->get();
-    
+                        ->where('school_id', authUser()->id)->orderBy('id', 'Asc')->get();
+
                     $markTypeCount = MarkType::where('institute_classes_id', $request->student_wise_class_id)
-                                            ->where('school_id', authUser()->id)->count();
-                                            
+                        ->where('school_id', authUser()->id)->count();
+
                     $term = ResultSetting::where('school_id', authUser()->id)
-                                            ->where('id', $request->student_wise_term_id)->first();
-    
+                        ->where('id', $request->student_wise_term_id)->first();
+
                     $studentResults = Result::where('school_id', authUser()->id)
-                                            ->where('institute_class_id', $request->student_wise_class_id)
-                                            ->where('student_id', $request->student_wise_student_id)
-                                            ->where('term_id', $request->student_wise_term_id)
-                                            ->orderBy('subject_id', 'ASC')
-                                            ->get();
-                    
+                        ->where('institute_class_id', $request->student_wise_class_id)
+                        ->where('student_id', $request->student_wise_student_id)
+                        ->where('term_id', $request->student_wise_term_id)
+                        ->orderBy('subject_id', 'ASC')
+                        ->get();
+
                     $markTypeCount = $markTypeCount + 1;
-    
+
                     $attendance = Attendance::where('attendance', 1)
-                                            ->where('class_id', $request->student_wise_class_id)
-                                            ->where('student_id', $request->student_wise_student_id)
-                                            ->where('school_id', authUser()->id)->count();
-                    
+                        ->where('class_id', $request->student_wise_class_id)
+                        ->where('student_id', $request->student_wise_student_id)
+                        ->where('school_id', authUser()->id)->count();
                     $section = User::find($request->student_wise_student_id);
-                    
-                    if($studentResults->count() > 0)
-                    {
-                        return view('frontend.school.result.show_student_result', compact('studentResults', 'section', 'term', 'markType', 'markTypeCount', 'attendance','seo_array'));
-                    }
-                    else
-                    {
+
+                    if ($studentResults->count() > 0) {
+                        return view('frontend.school.result.show_student_result', compact('studentResults', 'section', 'term', 'markType', 'markTypeCount', 'attendance', 'seo_array'));
+                    } else {
                         Alert::info("Sorry", "Result not published yet");
                         return back();
                     }
                 }
-    
+
                 Alert::info("Sorry", "Result not input yet");
-                return back();   
-            }elseif($request->resultType == 'yearlyFinalResult') {
-                $request->validate(
-                    [
-                        'final_wise_class_id' => 'required',
-                        'final_student_wise_student_id' => 'required',
-                    ],
-                    [
-                        'final_wise_class_id.required' => 'Class Section Required',
-                        'final_student_wise_student_id.required' => 'Student Section Required',
-                    ]
-                    );
-                
+                return back();
+            } elseif ($request->resultType == 'yearlyFinalResult') {
+
+                $request->validate([
+                    'final_wise_class_id' => 'required',
+                    'final_student_wise_student_id' => 'required',
+                ], [
+                    'final_wise_class_id.required' => 'Class Section Required',
+                    'final_student_wise_student_id.required' => 'Student Section Required',
+                ]);
+
                 $term_id = $request->resultSetting;
-                if(!(count($term_id) > 1)) {
+
+                if (!$term_id) {
+                    Alert::info("Select terms !");
+                    return back();
+                } elseif (!(count($term_id) > 1)) {
                     Alert::info("At least select two term !");
                     return back();
                 }
-                $studentResults = Result::where('school_id', authUser()->id)->where('institute_class_id', $request->final_wise_class_id)
+
+                if ($request->result_type == 'all_student') {
+                    $students_id = Result::where('institute_class_id', $request->final_wise_class_id)->whereIn('term_id', $term_id)
+                                          ->orderBy('student_id', 'ASC')->pluck('student_id')->unique();
+
+
+                    $final_student_wise_student_id = $request->final_student_wise_student_id;
+                    $final_wise_class_id = $request->final_wise_class_id;
+
+                    return view('frontend.school.result.all_Term_Result', compact('term_id', 'students_id', 'final_wise_class_id'));
+                } else {
+                    
+                    $studentResults = Result::where('school_id', authUser()->id)->where('institute_class_id', $request->final_wise_class_id)
                     ->where('student_id', $request->final_student_wise_student_id)
                     ->whereIn('term_id', $term_id)
-                    ->orderBy('term_id','ASC')
-                    ->get();
-    
-                $subjects = [];
-    
-                foreach ($studentResults as $key => $result) {
-                    if(!is_null($result->term)):
-                        // $subjects[$result->subject->subject_name][$result->term->term_name] = [
-                        $subjects[$result->subject->subject_name][$result->term->title] = [
-                            'subject_id'  => $result->subject_id,
-                            'total' => $result->total,
-                            'written' => $result->written,
-                            'mcq' => $result->mcq,
-                            'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
-                        ];
-    
-                    endif;
+                                            ->orderBy('term_id','ASC')
+                                            ->orderBy('updated_at', 'ASC')
+                                            ->get();
+
+                    $subjects = [];
+
+                    $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+                    $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+                    $optional_main_subject = 127;
+                    $my_group_id = $studentResults->first()->user?->group_id;
+
+                    if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+                        /* Hridoy
+                        * 126 = Higher Math
+                        * 138 = Biology
+                        * 134 = Agriculture Studies
+                        * 152 = Finance & Banking
+                        * Group 1 = Science
+                        */
+                        if($my_group_id == 1) {
+                            if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                            elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                            elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
+                        }
+                    }
+
+                    $subject_bangla1_bangla2 = [];
+                    $subject_english1_english2 = [];
+
+                    foreach ($studentResults as $key => $result) {
+                        if(!is_null($result->term) && !is_null($result->subject)
+                        &&
+                        (in_array($result->subject->group_id, [0, $my_group_id])
+                        || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+                        || ($optional_main_subject ?? '') == $result->subject?->subject_code
+                        )){
+                            if(in_array($result->subject?->subject_code, [101, 102])){
+                                $subject_bangla1_bangla2[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => $result->subject_id,
+                                    'total' => (int) $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }elseif(in_array($result->subject?->subject_code, [107, 108])){
+                                $subject_english1_english2[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => [$result->subject_id],
+                                    'total' => (int) $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }else{
+                                $subjects[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => [$result->subject_id],
+                                    'total' => $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }
+                        }
+                    }
+
+                    $iteration = 1;
+                    foreach ($subject_bangla1_bangla2 as $all_terms) {
+                        foreach ($all_terms as $key => $term) {
+                            if($iteration == 2) {
+                                $subjects['Bangla'][$key]['subject_id'] = [$subjects['Bangla'][$key]['subject_id'], $term['subject_id']];
+                                $subjects['Bangla'][$key]['total'] = ($subjects['Bangla'][$key]['total'] + $term['total']) / 2;
+                                $subjects['Bangla'][$key]['written'] = ($subjects['Bangla'][$key]['written'] + $term['written']) / 2;
+                                $subjects['Bangla'][$key]['mcq'] = ($subjects['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
+                                $subjects['Bangla'][$key]['other'] = ($subjects['Bangla'][$key]['other'] + $term['other']) / 2;
+                            }else $subjects['Bangla'][$key] = $term;
+
+                        }
+                        $iteration++;
+                    }
+
+                    $iteration = 1;
+                    foreach ($subject_english1_english2 as $all_terms) {
+                        foreach ($all_terms as $key => $term) {
+                            if($iteration == 2) {
+                                $subjects['English'][$key]['subject_id'] = [$subjects['English'][$key]['subject_id'], $term['subject_id']];
+                                $subjects['English'][$key]['total'] = ($subjects['English'][$key]['total'] + $term['total']) / 2;
+                                $subjects['English'][$key]['written'] = ($subjects['English'][$key]['written'] + $term['written']) / 2;
+                                $subjects['English'][$key]['mcq'] = ($subjects['English'][$key]['mcq'] + $term['mcq']) / 2;
+                                $subjects['English'][$key]['other'] = ($subjects['English'][$key]['other'] + $term['other']) / 2;
+                            }else $subjects['English'][$key] = $term;
+
+                        }
+                        $iteration++;
+                    }
+
+                    $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
+                                    ->where('school_id', authUser()->id)
+                                    ->where('institute_class_id', $request->final_wise_class_id)
+                                    ->whereIn('term_id', $term_id)
+                                    ->orderByDesc('finalTotal')
+                                    ->groupBy('student_id')
+                                    ->get();
+                
+                    $studentRank    = $rank->where('student_id', $request->final_student_wise_student_id)->keys()->first() + 1;
+        
+                    $section = User::find($request->final_student_wise_student_id);
+                    $section_rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
+                                    ->where('school_id', authUser()->id)
+                                    ->where('institute_class_id', $request->final_wise_class_id)
+                                    ->where('section_id', $section->section_id)
+                                    ->orderByDesc('finalTotal')
+                                    ->groupBy('student_id')
+                                    ->get();
+                    $section_studentRank = $section_rank->where('student_id', $request->final_student_wise_student_id)->keys()->first() + 1;
+
+                    // return view('frontend.school.result.show_final_result_under_nine', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank','seo_array'));
+                    return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank','seo_array'));
                 }
-    
-                $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
-                                ->where('school_id', authUser()->id)
-                                ->where('institute_class_id', $request->final_wise_class_id)
-                                ->orderByDesc('finalTotal')
-                                ->groupBy('student_id')
-                                ->get();
-               
-                $findRank       = $rank->where('student_id', $request->final_student_wise_student_id);
-                $studentRank    = $findRank->keys()->first() + 1;
-    
-                $section = User::find($request->final_student_wise_student_id);
-                $section_rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
-                                ->where('school_id', authUser()->id)
-                                ->where('institute_class_id', $request->final_wise_class_id)
-                                // ->where('term_id', $request->student_wise_term_id)
-                                ->where('section_id', $section->section_id)
-                                ->orderByDesc('finalTotal')
-                                ->groupBy('student_id')
-                                ->get();
-    
-                // $section_findRank       = $section_rank->where('student_id', $request->final_student_wise_student_id);;
-                $section_studentRank    = $section_rank->where('student_id', $request->final_student_wise_student_id)->keys()->first() + 1;
-    
-                // $userSection = User::where('id', $request->final_student_wise_student_id)->first();
-                // $attendance = Attendance::where('section_id', $userSection->section_id)->where('student_id', $request->final_student_wise_student_id)->get();
-    
-                return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank','seo_array'));
-                // return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'attendance','section_studentRank','seo_array'));
-            }else{
+            }
+             else {
                 $request->validate(
-                        [
-                            'class_wise_class_id' => 'required',
-                            'class_wise_term_id' => 'required',
-                        ],
-                        [
-                            'class_wise_class_id.required' => 'Class Section Required',
-                            'class_wise_term_id.required' => 'Term Section Required',
-                        ]
-                    );
-            
+                    [
+                        'class_wise_class_id' => 'required',
+                        'class_wise_term_id' => 'required',
+                    ],
+                    [
+                        'class_wise_class_id.required' => 'Class Section Required',
+                        'class_wise_term_id.required' => 'Term Section Required',
+                    ]
+                );
+
                 $class = $request->class_wise_class_id;
                 $term = $request->class_wise_term_id;
-    
+
                 $students =  User::where('school_id', authUser()->id)->where('class_id', $class)->onlyTrashed()->get()->pluck('id')->toArray();
-                  
+
                 $classResults = Result::where('results.school_id', authUser()->id)
-                                            ->with('user')
-                                            ->where('institute_class_id', $request->class_wise_class_id)
-                                            ->where('term_id', $request->class_wise_term_id)
-                                            ->whereNotIn('student_id', $students)
-                                            ->get()->groupBy('student_id');
-               
+                    ->with('user')
+                    ->where('institute_class_id', $request->class_wise_class_id)
+                    ->where('term_id', $request->class_wise_term_id)
+                    ->whereNotIn('student_id', $students)
+                    ->get()->groupBy('student_id');
+
                 $studentsId = array_keys($classResults->toArray());
-                
+
                 $attendanceCount = CustomAttendanceInput::where('school_id', authUser()->id)
-                                                        ->where('result_setting_id', $request->class_wise_term_id)
-                                                        ->whereIn('user_id', $studentsId)->count();
-    
+                    ->where('result_setting_id', $request->class_wise_term_id)
+                    ->whereIn('user_id', $studentsId)->count();
+
                 if ($attendanceCount != count($classResults)) {
-                    $classResults = $classResults; 
+                    $classResults = $classResults;
                     $attendanceNotEqual = 1;
                 } else {
                     $classResults = Result::leftJoin('custom_attendance_input as attendance', 'results.student_id', '=', 'attendance.user_id')
-                                        ->whereNotIn('results.student_id', $students)
-                                        ->where('results.school_id', authUser()->id)
-                                        ->where('attendance.school_id', authUser()->id)
-                                        ->where('institute_class_id', $request->class_wise_class_id)
-                                        ->where('term_id', $request->class_wise_term_id)
-                                        ->where('attendance.result_setting_id', $request->class_wise_term_id)
-                                        ->get()->groupBy('student_id');
-    
+                        ->whereNotIn('results.student_id', $students)
+                        ->where('results.school_id', authUser()->id)
+                        ->where('attendance.school_id', authUser()->id)
+                        ->where('institute_class_id', $request->class_wise_class_id)
+                        ->where('term_id', $request->class_wise_term_id)
+                        ->where('attendance.result_setting_id', $request->class_wise_term_id)
+                        ->get()->groupBy('student_id');
+
                     $attendanceNotEqual = 0;
                 }
-                
+
                 $result_pass_mark = ResultSetting::findOrFail($term);
-                $arrOfResult =[];
-                foreach ($classResults as $result => $data){
+                $arrOfResult = [];
+                foreach ($classResults as $result => $data) {
                     $total = 0;
                     $totalGpa = 0.000;
                     $totalSubject = 0;
                     $resultStatus = 1;
-                    foreach($data as $results){
-                        if($results->absent == 1 || $results->total != 0) {
+                    foreach ($data as $results) {
+                        if ($results->absent == 1 || $results->total != 0) {
                             $total += $results->total;
                             $totalGpa += $results->gpa;
                             $optionalSubject = $data->first()->user?->optional_subject;
@@ -406,10 +407,10 @@ class ResultController extends Controller
                                 $optionalResult = $data->whereIn('subject_id', $optionalSubjectId)->first();
                                 $not = $optionalResult->subject_id == $results->subject_id;
                                 if (!$not) {
-                                    if( gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0 ) $resultStatus = 0;
-                                } 
+                                    if (gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0) $resultStatus = 0;
+                                }
                             } else {
-                                if( gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0 ) $resultStatus = 0;
+                                if (gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0) $resultStatus = 0;
                             }
                             // if( gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0 ) {
                             //     $resultStatus = 0;
@@ -417,26 +418,28 @@ class ResultController extends Controller
                             $totalSubject++;
                         }
                     }
-                    if( $total == 0 ) { $resultStatus = 0; }
+                    if ($total == 0) {
+                        $resultStatus = 0;
+                    }
                     $optionalSubject = $data->first()->user?->optional_subject;
                     if (in_array($data->first()->user?->class?->class_name, classFilter()) && $optionalSubject != null) {
-                        $totalSubject = $totalSubject - 1; 
+                        $totalSubject = $totalSubject - 1;
                         $optionalSubjectId = \App\Models\Subject::where('school_id', authUser()->id)->where('class_id', $class)->whereIn('subject_code', $optionalSubject)->get()->pluck('id')->toArray();
                         $optionalResult = $data->whereIn('subject_id', $optionalSubjectId)->first();
-                        if($optionalResult->gpa != null){
+                        if ($optionalResult->gpa != null) {
                             $totalGpa = $totalGpa - $optionalResult->gpa;
                             $addOptionalPoint = $optionalResult->gpa - 2;
                             $addOptionalPoint = $addOptionalPoint < 0 ? 0 : $addOptionalPoint;
                             $totalGpa = $totalGpa + $addOptionalPoint;
-                        }                        
-                        
+                        }
+
                         $totalGpa = number_format($totalGpa / $totalSubject, 2);
-                        $totalGpa = $totalGpa > 5 ? 5 : $totalGpa; 
+                        $totalGpa = $totalGpa > 5 ? 5 : $totalGpa;
                     } else {
                         $totalGpa = $totalSubject != 0 ? number_format($totalGpa / $totalSubject, 2) : 1;
                     }
-                    
-                    $arrOfResult[][$total]= [
+
+                    $arrOfResult[][$total] = [
                         'total'                  => $total,
                         'totalGpa'               => $totalGpa,
                         'resultStatus'           => $resultStatus,
@@ -445,22 +448,22 @@ class ResultController extends Controller
                         'present'                => isset($data[0]->present) ? $data[0]->present : 0,
                     ];
                 }
-    
+
                 $passStudent = [];
                 $failStudent = [];
                 $arraySize = sizeof($arrOfResult);
                 $sortedArrayOfResult = collect($arrOfResult)->sortByDesc('total');
-    
+
                 foreach ($arrOfResult as $key => $results) {
                     foreach ($results as $key => $result) {
-                        if($result['resultStatus'] == 1) {
+                        if ($result['resultStatus'] == 1) {
                             $passStudent[] = $result;
-                        }else{
+                        } else {
                             $failStudent[] = $result;
                         }
                     }
                 }
-    
+
                 $findPassStudentGpaColumn = array_column($passStudent, 'totalGpa');
                 $findPassStudentTotalColumn = array_column($passStudent, 'total');
                 $findPassStudentPresentColumn = array_column($passStudent, 'present');
@@ -474,379 +477,88 @@ class ResultController extends Controller
                 $findFailStudentPresentColumn = array_column($failStudent, 'present');
                 $findFailStudentStudent_roll_number = array_column($failStudent, 'student_roll_number');
                 array_multisort($findFailStudentTotalColumn, SORT_DESC, $findFailStudentPresentColumn, SORT_DESC, $findFailStudentStudent_roll_number, SORT_ASC, $failStudent);
-    
-                return view('frontend.school.result.classWiseResult', compact('sortedArrayOfResult','passStudent', 'failStudent','term','class', 'arraySize', 'attendanceNotEqual','seo_array'));
+
+                return view('frontend.school.result.classWiseResult', compact('sortedArrayOfResult', 'passStudent', 'failStudent', 'term', 'class', 'arraySize', 'attendanceNotEqual', 'seo_array'));
             }
-        }
-        else{
+        } else {
             return back();
         }
     }
 
-   
-    // public function abrakadabra(){
-    //    return gpa(0, 0, 0, 0, 109, 95, 1233);
-    // }
-}
+    # Hridoy
+    public function get_all_students_results($final_wise_class_id, $final_student_wise_student_id, $term_id)
+    {
+        $term_id = json_decode($term_id);
 
+        $studentResults = Result::where('school_id', authUser()->id)->where('institute_class_id', $final_wise_class_id)
+            ->where('student_id', $final_student_wise_student_id)
+            ->whereIn('term_id', $term_id)
+            ->orderBy('term_id', 'ASC')
+            ->orderBy('updated_at', 'ASC')
+            ->get();
+            
+        $subjects = [];
 
-------------------------show_final_result.blade.php---------------------
-@extends('layouts.school.master')
+        $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+        $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+        $optional_main_subject = 127;
+        $my_group_id = $studentResults->first()->user?->group_id;
 
-@section('content')
-    <!--start content-->
-    <main class="page-content">
-        <div class="row">
-            <div class="col-xl mx-auto">
-                @if (count($studentResults) > 0)
-                <div class="card">
-                    <div class="card-body" id="printDi">
-                        <div class="border p-3 rounded" style="overflow-x:auto;">
-                           <div id="printDiv">
-                                <div class="d-flex justify-content-center">
-                                    @if (File::exists(public_path(authUser()->school_logo)) && !is_null(authUser()->school_logo))
-                                        <img src="{{asset(authUser()->school_logo)}}" alt="school logo" class="img-fluid" width="80" style="width:100px; height:80px; margin-right:20px;">
-                                    @endif
-                                    <div class="text-center">
-                                        <h4 style="margin-bottom: 0px;"> {{ strtoupper(authUser()->school_name )}} </h4>
-                                        <p style="margin-bottom: 0px; font-size:12px"> {{ (authUser()->slogan )}} </p>
-                                        <p style="margin-bottom: 0px;"> {{ authUser()->address }} </p>
-                                        <h5>Annual Examination Result</h5>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="d-flex mb-2 justify-content-between">
-                                    @if(File::exists(asset($studentResults->first()->user?->image)))
-                                    <img src="{{asset($studentResults->first()->user?->image)}}" class="img-fluid" alt="student image" style="height: 70px; width: 70px; margin-right:20px;">
-                                    @else
-                                    <img src="{{asset('d/no-img.jpg')}}" class="img-fluid" alt="student image" style="height: 70px; width: 70px; margin-right:20px;">
-                                    @endif
+        if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+            /* Hridoy
+            * 126 = Higher Math
+            * 138 = Biology
+            * 134 = Agriculture Studies
+            * 152 = Finance & Banking
+            * Group 1 = Science
+            */
+            if($my_group_id == 1) {
+                if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
+            }
+        }
 
-                                    <div class="h6 col-md-3" style="font-size: 12px;">
-                                        <table>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Student Name</td>
-                                                    <td>: {{ strtoupper($studentResults->first()->user?->name) }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Father Name</td>
-                                                    <td>: {{ strtoupper($studentResults->first()->user?->father_name)  }}</td>
-                                                </tr>
-                                                {{-- <tr>
-                                                    <td>Mother Name</td>
-                                                    <td>: {{ $studentResults->first()->user?->mother_name }}</td>
-                                                </tr> --}}
-                                                <tr>
-                                                    <td>Shift</td>
-                                                    <td>: @if($studentResults->first()->user?->shift == 1) Morning @elseif($studentResults->first()->user?->shift == 2) Day @elseif($studentResults->first()->user?->shift == 3) Evening @endif</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Roll</td>
-                                                    <td>: {{ $studentResults->first()->user?->roll_number }}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+        foreach ($studentResults as $key => $result) {
+            if(!is_null($result->term) && !is_null($result->subject)
+            &&
+            (in_array($result->subject->group_id, [0, $my_group_id]) 
+            || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+            || ($optional_main_subject ?? '') == $result->subject?->subject_code
+            )){
+                $subjects[$result->subject->subject_name][$result->term->title] = [
+                    'subject_id'  => $result->subject_id,
+                    'total' => $result->total,
+                    'written' => $result->written,
+                    'mcq' => $result->mcq,
+                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                ];
+            }
+        }
 
-                                    <div class="h6 col-md-4" style="font-size: 12px;">
-                                        <table>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Class</td>
-                                                    <td>: {{ $studentResults->first()->user?->class?->class_name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Section</td>
-                                                    <td>: {{ $studentResults->first()->user?->section?->section_name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>SID</td>
-                                                    <td>: {{ $studentResults->first()->user?->unique_id ?? 'none' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Year</td>
-                                                    <td>: {{date("Y")}}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
+        $rank = Result::select('student_id', 'attend_days')->selectRaw("SUM(total) as finalTotal")
+                        ->where('school_id', authUser()->id)
+                        ->where('institute_class_id', $final_wise_class_id)
+                        ->whereIn('term_id', $term_id)
+                        ->orderByDesc('finalTotal')
+                        ->orderByDesc('attend_days')
+                        ->groupBy('student_id', 'attend_days')
+                        ->get();
 
-                                    <div class="ml-auto d-flex justify-content-end">
-                                        <table class="table table-bordered" style="font-size: 8px;">
-                                            <thead>
-                                                <tr align="center">
-                                                    <th colspan="2">Performance In Class</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td style="padding:1px;">Excelent</td>
-                                                    <td width="20%" style="padding:1px;"></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;margin-left:2px;">Very Good</td>
-                                                    <td style="padding:1px;"></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">Good</td>
-                                                    <td style="padding:1px;"></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">Poor</td>
-                                                    <td style="padding:1px;"></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <table class="table table-bordered text-center" style="font-size: 12px;">
-                                    <thead>
-                                    <tr align="center">
-                                        <th>Subject Name</th>
-                                        <th>Full Marks</th>
-                                        <th>Pass Marks</th>
-                                        @foreach (array_slice($subjects, 0, 1, true) as $key => $subject)
-                                            @foreach ($subject as $k => $v)
-                                                <th class="p-0">
-                                                    {{ $k }}
-                                                    <table class="table table-bordered m-0">
-                                                        <tr>
-                                                            <th width="25%">Written</th>
-                                                            <th width="25%">Mcq</th>
-                                                            <th width="25%">Other</th>
-                                                            <th width="25%">Total</th>
-                                                        </tr>
-                                                    </table>
-                                                </th>
-                                            @endforeach
-                                        @endforeach
-                                        <th>Average</th>
-                                        <th>Grade Latter</th>
-                                        <th>Grade Point</th>
-                                    </tr>
-                                    </thead>
+        $studentRank = $rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
 
-                                    <tbody>
-                                        @php
-                                            $totalAvg = 0;
-                                            $totalGpa = 0;
-                                        @endphp
-                                        @foreach ($subjects as $key => $subject )
-                                            @foreach ($subject as $k => $v)
-                                                @php
-                                                    $total[$k] = 0;
-                                                @endphp
-                                            @endforeach
-                                        @endforeach
-                                        @foreach ($subjects as $key => $subject )
-                                        <tr>
-                                            <td>{{ $key }}</td>
-                                            <td>100</td>
-                                            <td>33</td>
-                                            @php
-                                                $sum = 0;
+        $section = User::find($final_student_wise_student_id);
+        $section_rank = Result::select('student_id','attend_days')->selectRaw("SUM(total) as finalTotal")
+                        ->where('school_id', authUser()->id)
+                        ->where('institute_class_id', $final_wise_class_id)
+                        ->where('section_id', $section->section_id)
+                        ->whereIn('term_id', $term_id)
+                        ->orderByDesc('finalTotal')
+                        ->orderByDesc('attend_days')
+                        ->groupBy('student_id','attend_days')
+                        ->get();
+        $section_studentRank = $section_rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
 
-                                            @endphp
-
-                                            @foreach ($subject as $k => $v)
-                                                @php
-                                                    $total[$k] += $v['total'];
-                                                    $sum += $v['total'];
-                                                    // $totalTermMark = \App\Models\Term::where('school_id', authUser()->id)->selectRaw("SUM(total_mark) as term_total_mark")->first(); (Old System Result)
-                                                    // $totalTermMark = \App\Models\ResultSetting::where('school_id', authUser()->id)->selectRaw("SUM(all_subject_mark) as term_total_mark")->first();
-                                                    $subject_id = $v['subject_id'];
-                                                    $class_id = $studentResults->first()->user?->class_id;
-                                                    $totalTermMark = \App\Models\ResultSubjectCountableMark::where('school_id', authUser()->id)->where('institute_class_id', $class_id)->whereIn('result_setting_id', $term_id)->where('subject_id', $subject_id)->selectRaw("SUM(mark) as term_total_mark")->first();
-                                                    $count = $totalTermMark->term_total_mark;
-                                                @endphp
-                                                @if ($v['total'] != 0)
-                                                    <td class="p-0">
-                                                        <table class="table table-bordered m-0">
-                                                            <tr>
-                                                                <td width="25%">{{ $v['written'] }}</td>
-                                                                <td width="25%">{{ $v['mcq'] }}</td>
-                                                                <td width="25%">{{ $v['other'] }}</td>
-                                                                <td width="25%">{{ $v['total'] }}</td>
-                                                            </tr>
-                                                        </table>
-                                                    </td>
-                                                @else
-                                                    <td class="p-0">
-                                                        <table class="m-0 table table-bordered">
-                                                            <tr>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                                <td width="25%"><br></td>
-                                                            </tr>
-                                                        </table>
-                                                    </td>
-                                                @endif
-                                            @endforeach
-                                        <td>
-                                            {{ number_format(($sum * 100) / $count, 2) }}
-                                        </td>
-                                        <td>{{ annualGrade(number_format(($sum * 100) / $count, 2)) }}</td>
-                                        <td>{{ annualGpa(number_format(($sum * 100) / $count, 2)) }}</td>
-                                        @php
-                                            $totalGpa += annualGpa(number_format(($sum * 100) / $count, 2));
-                                            $finalGpa = number_format($totalGpa / count($subjects), 2);
-                                            $totalAvg += number_format(($sum * 100) / $count, 2);
-                                        @endphp
-                                        </tr>
-                                        @endforeach
-                                        @php
-                                        @endphp
-                                        <tr>
-                                            <th colspan="3">Total Mark And GPA</th>
-                                            @foreach ($total as $value)
-                                                <th>{{ $value }}</th>
-                                            @endforeach
-                                            <th>{{ number_format(($totalAvg / count($subjects)), 2) }}</th>
-                                            <th>{{ classWiseGpa($finalGpa) }}</th>
-                                            <th> {{$finalGpa }}</th>
-                                            {{-- <th>{{ finalGrade($totalAvg, authUser()->id) }}</th> --}}
-                                            {{-- <th>{{ finalGpa($totalAvg) }} {{$finalGpa }}</th> --}}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="row justify-content-between">
-
-                                    <div class="ml-auto col-2">
-                                        <table class="table table-bordered" style="font-size: 12px; border-color:black;">
-                                            <thead>
-                                                <tr align="center">
-                                                    <th colspan="2">Mark Grade</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td style="padding:1px;">80-100</td>
-                                                    <td width="20%" style="padding:1px;">A+</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">70-79</td>
-                                                    <td style="padding:1px;">A</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">60-69</td>
-                                                    <td style="padding:1px;">A-</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">50-59</td>
-                                                    <td style="padding:1px;">B</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">40-49</td>
-                                                    <td style="padding:1px;">C</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">33-39</td>
-                                                    <td style="padding:1px;">D</td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;">0-32</td>
-                                                    <td style="padding:1px;">F</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>                            
-    
-                                    <div class="col-3">
-                                        <div>
-                                            <table class=" table table-bordered text-center" style="font-size: 12px; border-color:black;">
-    
-                                                <tbody>
-                                                    <tr class="row">
-                                                        <td class="col-8 border-end-0" style="border-bottom-color: white;" style="padding:2px;">Total Working Days</td>
-                                                        <td class="col-4" style="padding:2px;"></td>
-                                                    </tr>
-                                                    <tr class="row">
-                                                        <td class="col-8 border-end-0 border-top-0" style="padding:2px;">Present</td>
-                                                        <td class="col-4" style="padding:2px;"></td>
-                                                    </tr>
-                                                    <tr class="row">
-                                                        <td class="col-8 border-end-0 border-top-0" style="padding:2px;">Absent</td>
-                                                        <td class="col-4" style="padding:2px;"></td>                                                
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-    
-                                        <div>
-                                            <table class=" table table-bordered text-center" style="font-size: 12px; border-color:black;">
-    
-                                                <tbody>
-                                                    <tr class="row">
-                                                        <td class="col-8 border-end-0" style="padding:2px;">Position in class</td>
-                                                        <td class="col-4" style="padding:2px;">{{(isset($resultStatus)) ? ' ' : $studentRank}}</td>
-                                                    </tr>
-                                                    <tr class="row">
-                                                        <td class="col-8 border-end-0 border-top-0" style="padding:2px;">Position in section</td>
-                                                        <td class="col-4" style="padding:2px;">{{(isset($resultStatus)) ? ' ' : $section_studentRank}}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        
-                                    </div>
-    
-                                    <div class="col-6" style="font-size: 12px;">
-                                        <table class=" table table-bordered text-center" style="border-color: black;">
-                                            <thead>
-                                                <tr>
-                                                    <th colspan="3">Signatures</th>
-                                                </tr>
-                                            </thead> 
-                                            <tbody>
-                                                <tr style="height: 90%">
-                                                    <td style="height: 80px; width:150px;"></td>
-                                                    <td style="height: 80px; width:150px;"></td>
-                                                    <td style="height: 80px; width:150px;"></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Class Teacher</td>
-                                                    <td>Principal</td>
-                                                    <td>Guardian</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>                            
-    
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 d-flex justify-content-center">
-                    <button class="btn btn-success" onclick="printDiv()">Print</button>
-                </div>
-                @else
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="text-danger text-center">Result Not Available</h3>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
-        <!--end row-->
-    </main>
-
-@endsection
-
-@push('js')
-<script>
-    function printDiv(printDiv) {
-        var printContents = document.getElementById('printDiv').innerHTML;
-        var originalContents = document.body.innerHTML;
-
-        document.body.innerHTML = printContents;
-
-        window.print();
-
-        document.body.innerHTML = originalContents;
+        return view('frontend.school.result.components.all_term_result_print', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank'));
     }
-</script>
-@endpush
+}

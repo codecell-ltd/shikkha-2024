@@ -132,6 +132,7 @@
             @endforeach
             @endforeach
             @foreach ($subjects as $key => $subject )
+
             <tr>
                 <td>{{ $key }}</td>
                 <td>100</td>
@@ -177,7 +178,7 @@
                 </td>
                 <td>{!! annualGrade(number_format(($sum * 100) / $count, 2)) !!}</td>
                 <td>
-                 @php
+                @php
                     $annualGPA = annualGpa(number_format(($sum * 100) / $count, 2));
                     
                     if($annualGPA == 0) $failed = true;
@@ -186,10 +187,11 @@
                 </td>
                 @php
                 $totalGpa += annualGpa(number_format(($sum * 100) / $count, 2));
-                $finalGpa = number_format($totalGpa / count($subjects), 2);
+                $finalGpa = number_format($totalGpa / ($studentResults->first()->user?->class?->class_name == "Class Nine" ? count($subjects) - 1 : count($subjects)), 2);
                 $totalAvg += number_format(($sum * 100) / $count, 2);
                 @endphp
             </tr>
+
             @endforeach
             @php
             @endphp
@@ -210,7 +212,7 @@
                     @if(isset($failed) && $failed == true)
                         0
                     @else
-                        {{ $finalGpa }}
+                        {{ $finalGpa >= 5 ? 5 : $finalGpa }}
                     @endif
                 </th>
             </tr>

@@ -11,6 +11,7 @@ use App\Models\Result;
 use App\Models\ResultSetting;
 use App\Models\ResultSubjectCountableMark;
 use App\Models\Section;
+use App\Models\Subject;
 use App\Models\Term;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -126,9 +127,6 @@ class ResultController extends Controller
      */
     public function showClassWiseResult(Request $request)
     {
-
-        // return request();
-
         if (hasPermission('see_result')) {
             $seoTitle = 'Result';
             $seoDescription = 'Result';
@@ -215,7 +213,8 @@ class ResultController extends Controller
                 }
 
                 if ($request->result_type == 'all_student') {
-                    $students_id = Result::where('institute_class_id', $request->final_wise_class_id)->whereIn('term_id', $term_id)->pluck('student_id')->unique();
+                    $students_id = Result::where('institute_class_id', $request->final_wise_class_id)->whereIn('term_id', $term_id)
+                                          ->orderBy('student_id', 'ASC')->pluck('student_id')->unique();
 
 
                     $final_student_wise_student_id = $request->final_student_wise_student_id;
@@ -223,30 +222,112 @@ class ResultController extends Controller
 
                     return view('frontend.school.result.all_Term_Result', compact('term_id', 'students_id', 'final_wise_class_id'));
                 } else {
-
+                    
                     $studentResults = Result::where('school_id', authUser()->id)->where('institute_class_id', $request->final_wise_class_id)
                     ->where('student_id', $request->final_student_wise_student_id)
                     ->whereIn('term_id', $term_id)
-                    ->orderBy('term_id','ASC')
-                    ->get();
+                                            ->orderBy('term_id','ASC')
+                                            ->orderBy('updated_at', 'ASC')
+                                            ->get();
 
                     $subjects = [];
-        
-                    foreach ($studentResults as $key => $result) {
-                        if(!is_null($result->term)){
-                            $subjects[$result->subject->subject_name][$result->term->title] = [
-                                'subject_id'  => $result->subject_id,
-                                'total' => $result->total,
-                                'written' => $result->written,
-                                'mcq' => $result->mcq,
-                                'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
-                            ];
+
+                    $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+                    $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+                    $optional_main_subject = 127;
+                    $my_group_id = $studentResults->first()->user?->group_id;
+
+                    if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+                        /* Hridoy
+                        * 126 = Higher Math
+                        * 138 = Biology
+                        * 134 = Agriculture Studies
+                        * 152 = Finance & Banking
+                        * Group 1 = Science
+                        */
+                        if($my_group_id == 1) {
+                            if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                            elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                            elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
                         }
                     }
+
+                    $subject_bangla1_bangla2 = [];
+                    $subject_bangla = [];
+                    $subject_english1_english2 = [];
+                    $subject_english = [];
+
+                    foreach ($studentResults as $key => $result) {
+                        if(!is_null($result->term) && !is_null($result->subject)
+                        &&
+                        (in_array($result->subject->group_id, [0, $my_group_id])
+                        || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+                        || ($optional_main_subject ?? '') == $result->subject?->subject_code
+                        )){
+                            if(in_array($result->subject?->subject_code, [101, 102])){
+                                $subject_bangla1_bangla2[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => $result->subject_id,
+                                    'total' => (int) $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }elseif(in_array($result->subject?->subject_code, [107, 108])){
+                                $subject_english1_english2[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => [$result->subject_id],
+                                    'total' => (int) $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }else{
+                                $subjects[$result->subject->subject_name][$result->term->title] = [
+                                    'subject_id'  => [$result->subject_id],
+                                    'total' => $result->total,
+                                    'written' => $result->written,
+                                    'mcq' => $result->mcq,
+                                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                                ];
+                            }
+                        }
+                    }
+
+                    $iteration = 1;
+                    foreach ($subject_bangla1_bangla2 as $all_terms) {
+                        foreach ($all_terms as $key => $term) {
+                            if($iteration > 1) {
+                                $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
+                                $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
+                                $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
+                                $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
+                                $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                            }else $subject_bangla['Bangla'][$key] = $term;
+
+                        }
+                        $iteration++;
+                    }
+
+                    $iteration = 1;
+                    foreach ($subject_english1_english2 as $all_terms) {
+                        foreach ($all_terms as $key => $term) {
+                            if($iteration > 1) {
+                                $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
+                                $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
+                                $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
+                                $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
+                                $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                            }else $subject_english['English'][$key] = $term;
+
+                        }
+                        $iteration++;
+                    }
+
+                    $subjects = array_merge($subject_bangla, $subject_english, $subjects);
 
                     $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
                                     ->where('school_id', authUser()->id)
                                     ->where('institute_class_id', $request->final_wise_class_id)
+                                    ->whereIn('term_id', $term_id)
                                     ->orderByDesc('finalTotal')
                                     ->groupBy('student_id')
                                     ->get();
@@ -263,9 +344,10 @@ class ResultController extends Controller
                                     ->get();
                     $section_studentRank = $section_rank->where('student_id', $request->final_student_wise_student_id)->keys()->first() + 1;
 
-                    return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank','seo_array'));
+                    return view('frontend.school.result.show_final_result', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank', 'seo_array'));
                 }
-            } else {
+            }
+             else {
                 $request->validate(
                     [
                         'class_wise_class_id' => 'required',
@@ -406,6 +488,7 @@ class ResultController extends Controller
         }
     }
 
+    # Hridoy
     public function get_all_students_results($final_wise_class_id, $final_student_wise_student_id, $term_id)
     {
         $term_id = json_decode($term_id);
@@ -414,41 +497,140 @@ class ResultController extends Controller
             ->where('student_id', $final_student_wise_student_id)
             ->whereIn('term_id', $term_id)
             ->orderBy('term_id', 'ASC')
+            ->orderBy('updated_at', 'ASC')
             ->get();
             
         $subjects = [];
 
-        foreach ($studentResults as $key => $result) {
-            if (!is_null($result->term)) {
-                $subjects[$result->subject->subject_name][$result->term->title] = [
-                    'subject_id'  => $result->subject_id,
-                    'total' => $result->total,
-                    'written' => $result->written,
-                    'mcq' => $result->mcq,
-                    'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others + $result->uniform + $result->midterm + $result->handwriting + $result->paynumber + $result->semester,
-                ];
+        $optional_subject_code = array_values($studentResults->first()->user?->optional_subject ?? []);
+        $optional_subject = $optional_subject_code ? Subject::whereSubjectCode($optional_subject_code[0])->first() : '';
+        $optional_main_subject = 127;
+        $my_group_id = $studentResults->first()->user?->group_id;
+
+        if(!empty($optional_subject) && in_array($optional_subject->group_id, [0, 4])){ // 0 & 4 means group subjects (optionalable)
+            /* Hridoy
+            * 126 = Higher Math
+            * 138 = Biology
+            * 134 = Agriculture Studies
+            * 152 = Finance & Banking
+            * Group 1 = Science
+            */
+            if($my_group_id == 1) {
+                if($optional_subject->subject_code == 126) $optional_main_subject = 138;
+                elseif($optional_subject->subject_code == 138) $optional_main_subject = 126;
+                elseif($optional_subject->subject_code == 134) $optional_main_subject = 138;
             }
         }
+
+        // foreach ($studentResults as $key => $result) {
+        //     if(!is_null($result->term) && !is_null($result->subject)
+        //     &&
+        //     (in_array($result->subject->group_id, [0, $my_group_id]) 
+        //     || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+        //     || ($optional_main_subject ?? '') == $result->subject?->subject_code
+        //     )){
+        //         $subjects[$result->subject->subject_name][$result->term->title] = [
+        //             'subject_id'  => $result->subject_id,
+        //             'total' => $result->total,
+        //             'written' => $result->written,
+        //             'mcq' => $result->mcq,
+        //             'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+        //         ];
+        //     }
+        // }
+
+        $subject_bangla1_bangla2 = [];
+        $subject_bangla = [];
+        $subject_english1_english2 = [];
+        $subject_english = [];
+
+        foreach ($studentResults as $key => $result) {
+            if(!is_null($result->term) && !is_null($result->subject)
+            &&
+            (in_array($result->subject->group_id, [0, $my_group_id])
+            || ($optional_subject_code ? $optional_subject_code[0] : '') == $result->subject?->subject_code
+            || ($optional_main_subject ?? '') == $result->subject?->subject_code
+            )){
+                if(in_array($result->subject?->subject_code, [101, 102])){
+                    $subject_bangla1_bangla2[$result->subject->subject_name][$result->term->title] = [
+                        'subject_id'  => $result->subject_id,
+                        'total' => (int) $result->total,
+                        'written' => $result->written,
+                        'mcq' => $result->mcq,
+                        'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                    ];
+                }elseif(in_array($result->subject?->subject_code, [107, 108])){
+                    $subject_english1_english2[$result->subject->subject_name][$result->term->title] = [
+                        'subject_id'  => [$result->subject_id],
+                        'total' => (int) $result->total,
+                        'written' => $result->written,
+                        'mcq' => $result->mcq,
+                        'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                    ];
+                }else{
+                    $subjects[$result->subject->subject_name][$result->term->title] = [
+                        'subject_id'  => [$result->subject_id],
+                        'total' => $result->total,
+                        'written' => $result->written,
+                        'mcq' => $result->mcq,
+                        'other' => $result->attendence + $result->assignment + $result->class_test + $result->presentation + $result->quiz + $result->practical + $result->others,
+                    ];
+                }
+            }
+        }
+
+        $iteration = 1;
+        foreach ($subject_bangla1_bangla2 as $all_terms) {
+            foreach ($all_terms as $key => $term) {
+                if($iteration > 1) {
+                    $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
+                    $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
+                    $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
+                    $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
+                    $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                }else $subject_bangla['Bangla'][$key] = $term;
+
+            }
+            $iteration++;
+        }
+
+        $iteration = 1;
+        foreach ($subject_english1_english2 as $all_terms) {
+            foreach ($all_terms as $key => $term) {
+                if($iteration > 1) {
+                    $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
+                    $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
+                    $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
+                    $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
+                    $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                }else $subject_english['English'][$key] = $term;
+
+            }
+            $iteration++;
+        }
+
+        $subjects = array_merge($subject_bangla, $subject_english, $subjects);
 
         $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
                         ->where('school_id', authUser()->id)
                         ->where('institute_class_id', $final_wise_class_id)
+                        ->whereIn('term_id', $term_id)
                         ->orderByDesc('finalTotal')
                         ->groupBy('student_id')
                         ->get();
-    
-        $studentRank    = $rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
+
+        $studentRank = $rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
 
         $section = User::find($final_student_wise_student_id);
         $section_rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
                         ->where('school_id', authUser()->id)
                         ->where('institute_class_id', $final_wise_class_id)
                         ->where('section_id', $section->section_id)
+                        ->whereIn('term_id', $term_id)
                         ->orderByDesc('finalTotal')
                         ->groupBy('student_id')
                         ->get();
         $section_studentRank = $section_rank->where('student_id', $final_student_wise_student_id)->keys()->first() + 1;
-
 
         return view('frontend.school.result.components.all_term_result_print', compact('subjects', 'term_id', 'studentResults', 'studentRank', 'section_studentRank'));
     }
