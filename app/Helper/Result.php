@@ -5,8 +5,18 @@ use App\Models\CustomAttendanceInput;
 use App\Models\Result;
 use Illuminate\Support\Facades\Auth;
 
-# Hridoy
-
+/**
+ * ---------------------------------------------------------------------
+ * Get a student's result of a specific subject & term
+ * ---------------------------------------------------------------------
+ * @author <Hridoy/>
+ * 
+ * @param int $subject_id
+ * @param int $term_id
+ * @param int $student_id
+ * 
+ * @return object
+ */
 if(!function_exists('get_result'))
 {
     function get_result(int $subject_id, int $term_id, int $student_id)
@@ -15,6 +25,17 @@ if(!function_exists('get_result'))
     }
 }
 
+/**
+ * ---------------------------------------------------------------------
+ * A query to get attendances of a student of on class
+ * ---------------------------------------------------------------------
+ * @author <Hridoy/>
+ * 
+ * @param int $class_id
+ * @param int $student_id
+ * 
+ * @return
+ */
 if(!function_exists('student_attendances_query'))
 {
     function student_attendances_query(int $class_id, int $student_id)
@@ -23,6 +44,17 @@ if(!function_exists('student_attendances_query'))
     }
 }
 
+/**
+ * ---------------------------------------------------------------------
+ * Get present & absent of a student of a class
+ * ---------------------------------------------------------------------
+ * @author <Hridoy/>
+ * 
+ * @param int $class_id
+ * @param int $student_id
+ * 
+ * @return array
+ */
 if(!function_exists('get_present_absent'))
 {
     function get_present_absent(int $class_id, int $student_id)
@@ -34,6 +66,18 @@ if(!function_exists('get_present_absent'))
     }
 }
 
+/**
+ * ---------------------------------------------------------------------
+ * Get term wise result of a student of a subject
+ * ---------------------------------------------------------------------
+ * @author <Hridoy/>
+ * 
+ * @param int $subject_id
+ * @param int $term_id
+ * @param int $student_id
+ * 
+ * @return object
+ */
 if(!function_exists('get_term_result'))
 {
     function get_term_result(int $subject_id, int $term_id, int $student_id)
@@ -42,6 +86,16 @@ if(!function_exists('get_term_result'))
     }
 }
 
+/**
+ * ---------------------------------------------------------------------
+ * Get custom present & absent of a student
+ * ---------------------------------------------------------------------
+ * @author <Hridoy/>
+ * 
+ * @param int $student_id
+ * 
+ * @return array
+ */
 if(!function_exists('get_custom_attendance'))
 {
     function get_custom_attendance(int $student_id)

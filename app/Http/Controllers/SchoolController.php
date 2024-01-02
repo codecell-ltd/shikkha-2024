@@ -5683,7 +5683,7 @@ class SchoolController extends Controller
             $termName = ModelsResultSetting::where('id', $term_id)->first();
             $subjectName = Subject::where('class_id', $class_id)->get();
             $markTypes = MarkType::where('institute_classes_id', $class_id)->where('school_id', authUser()->id)->orderBy('id', 'asc')->get();
-
+            
             return view('frontend.school.student.result.dataShowAll', compact('termName', 'subjectName', 'markTypes', 'section_id', 'class_id', 'seo_array'));
         } else {
             return back();
@@ -5762,8 +5762,7 @@ class SchoolController extends Controller
                         $practical =  is_array($request->Practical) ? $request->Practical[$key] : 199;
                         $written = is_array($request->Written) ? $request->Written[$key] : 199;
                         $mcq =  is_array($request->MCQ) ? $request->MCQ[$key] : 199;
-
-                        # Hridoy
+                           
                         $result = get_result($request->subject_id, $request->term_id, $data);
                         if(empty($result)) $result = new Result();
 
@@ -5774,20 +5773,24 @@ class SchoolController extends Controller
                         $result->section_id          = $request->section_id;
                         $result->subject_id          = $request->subject_id;
                         $result->term_id             = $request->term_id;
-                        $result->attendance          = is_null($request->Attendance) ? 0 : $request->Attendance[$key];
-                        $result->assignment          = is_null($request->Assignment) ? 0 : $request->Assignment[$key];
-                        $result->class_test          = is_null($request->Class_Test) ? 0 : $request->Class_Test[$key];
-                        $result->presentation        = is_null($request->Presentation) ? 0 : $request->Presentation[$key];
-                        $result->quiz                = is_null($request->Quiz) ? 0 : $request->Quiz[$key];
-                        $result->practical           = is_null($request->Practical) ? 0 : $request->Practical[$key];
-                        $result->written             = is_null($request->Written) ? 0 : $request->Written[$key];
-                        $result->mcq                 =  is_null($request->MCQ) ? 0 : $request->MCQ[$key];
-                        $result->handwriting         =  is_null($request->HandWriting) ? 0 : $request->HandWriting[$key];
-                        $result->uniform             =  is_null($request->UniForm) ? 0 : $request->UniForm[$key];
-                        $result->midterm             = is_null($request->Midterm) ? 0 : $request->Midterm[$key];
-                        $result->semester            = is_null($request->Semester) ? 0 : $request->Semester[$key];
-                        $result->paynumber           = is_null($request->PayNumber) ? 0 : $request->PayNumber[$key];
-                        $result->others             =  is_null($request->Others) ? 0 : $request->Others[$key];
+                        $result->attend_days         = get_custom_attendance($data)['present'];
+                        
+                        # Hridoy
+                        if($request->Attendance) $result->attendance = is_null($request->Attendance[$key]) ? 0 : $request->Attendance[$key];
+                        if($request->Assignment) $result->assignment = is_null($request->Assignment[$key]) ? 0 : $request->Assignment[$key];
+                        if($request->Class_Test) $result->class_test = is_null($request->Class_Test[$key]) ? 0 : $request->Class_Test[$key];
+                        if($request->Presentation) $result->presentation = is_null($request->Presentation[$key]) ? 0 : $request->Presentation[$key];
+                        if($request->Quiz) $result->quiz = is_null($request->Quiz[$key]) ? 0 : $request->Quiz[$key];
+                        if($request->Practical) $result->practical = is_null($request->Practical[$key]) ? 0 : $request->Practical[$key];
+                        if($request->Written) $result->written = is_null($request->Written[$key]) ? 0 : $request->Written[$key];
+                        if($request->MCQ) $result->mcq = is_null($request->MCQ[$key]) ? 0 : $request->MCQ[$key];
+                        if($request->HandWriting) $result->handwriting = is_null($request->HandWriting[$key]) ? 0 : $request->HandWriting[$key];
+                        if($request->UniForm) $result->uniform = is_null($request->UniForm[$key]) ? 0 : $request->UniForm[$key];
+                        if($request->Midterm) $result->midterm = is_null($request->Midterm[$key]) ? 0 : $request->Midterm[$key];
+                        if($request->Semester) $result->semester = is_null($request->Semester[$key]) ? 0 : $request->Semester[$key];
+                        if($request->PayNumber) $result->paynumber = is_null($request->PayNumber[$key]) ? 0 : $request->PayNumber[$key];
+                        if($request->Others) $result->others = is_null($request->Others[$key]) ? 0 : $request->Others[$key];
+                        
                         $result->total               = totalMark($result);
 
                         // I need to test the grade & gpa helper functions
