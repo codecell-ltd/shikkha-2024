@@ -67,8 +67,6 @@ class SettingsController extends Controller
      */
     public function index()
     {
-        //$institute_class= DB::table("institute_classes")->where('school_id'==authUser())->get();
-        //return $institute_class;
         $seoTitle = 'School Setting';
         $seoDescription = 'School Setting';
         $seoKeyword = 'School Setting';
@@ -89,9 +87,7 @@ class SettingsController extends Controller
                     'subjects'  =>  DB::table("common_subjects")->where('class', $class->id)->get(['id', 'code', 'name'])
                 ];
             }
-            return view('frontend.school.settings')->with(compact('data', 'seo_array'));
         } else {
-
             $data = [];
             $data['sections'] = DB::table("common_classes")->whereNotNull('section')->get();
             $data['classes'] = [];
@@ -103,8 +99,8 @@ class SettingsController extends Controller
                     'subjects'  =>  DB::table("common_subjects")->where('class', $class->id)->get(['id', 'code', 'name'])
                 ];
             }
-            return view('frontend.school.settings')->with(compact('data', 'seo_array'));
         }
+        return view('frontend.school.settings')->with(compact('data', 'seo_array'));
     }
 
     public function show()

@@ -685,7 +685,6 @@ class SchoolController extends Controller
     public function classShow()
     {
         if (hasPermission('class_show')) {
-
             if (authUser()->status == 0) {
                 return redirect()->route('school.payment.info');
             } elseif (authUser()->status == 2) {
@@ -745,17 +744,18 @@ class SchoolController extends Controller
     public function classUpdatePost(Request $request, $id)
     {
         if (hasPermission('class_edit')) {
-
-            //  return request();
             if (authUser()->status == 0) {
                 return redirect()->route('school.payment.info');
             } elseif (authUser()->status == 2) {
                 toast('Sorry Admin can Inactive Your Account Please Contact', 'error');
                 return back();
             }
+            
             $request->validate([
                 'class_name' => 'required',
+                'rank'       => 'required'
             ]);
+
             $class_name = $request->class_name;
             $dataClass = InstituteClass::where('id', '!=', $id)->where('class_name', $class_name)->where('school_id', authUser()->id)->count();
             if ($dataClass == 0) {
@@ -763,6 +763,7 @@ class SchoolController extends Controller
                 $class->class_name = $request->class_name;
                 $class->class_name_bn = $request->class_name_bn ?? $class->class_name_bn;
                 $class->class_fees = $request->class_fees;
+                $class->rank = $request->rank;
                 $class->active = (is_null($request->active) ? 0 : $request->active);
                 $class->school_id = authUser()->id;
                 $class->save();

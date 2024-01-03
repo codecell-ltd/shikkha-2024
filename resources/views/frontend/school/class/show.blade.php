@@ -31,7 +31,18 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        
+
+                    <h4>Ranks: </h4>
+                    @php
+                        $classes_ranks = get_classes();
+                    @endphp
+
+                    <ul start="{{ array_key_first($classes_ranks) }}" style="columns: 4; list-style: none; padding: 0; text-align: center;">
+                        @foreach ($classes_ranks as $rank => $classArr)
+                            <li style="margin-bottom: 10px;">{{ implode(' - ', $classArr) }} ({{ $rank }})</li>
+                        @endforeach
+                    </ul>
+
                         @if(count($class) > 0)
                             <table id="example" class="table text-center" style="width:100%">
                                 
@@ -42,7 +53,7 @@
 
                                         <th>{{__('app.Class')}} {{__('app.Name')}}</th>
                                         <th>{{__('app.Monthly Fees')}}</th>
-                                        {{-- <th>Active</th> --}}
+                                        <th>Rank</th>
                                         <th>{{__('app.Action')}}</th>
                                     </tr>
                                 </thead>
@@ -58,6 +69,17 @@
                                                 @endif
                                             </td>
                                             <td>{{$data->class_fees}}</td>
+                                            <td>
+                                                @if (isset($data->rank))
+                                                    <span class="text-success">
+                                                        {{ $data->rank }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-danger">
+                                                        {{ "Please set it's rank" }}
+                                                    </span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <div class="btn-group mr-2" role="group" aria-label="First group">
                                                     @if (hasPermission("class_edit"))
@@ -113,6 +135,10 @@
                                                                     <div class="col-12 mt-4">
                                                                         <label class="form-label-edit">{{ __('app.Class') }} {{ __('app.Fees') }}</label>
                                                                             <input type="number" required class="form-control" placeholder="{{ __('app.Class') }} {{ __('app.Fees') }}" name="class_fees" value="{{ $data->class_fees }}">
+                                                                    </div>
+                                                                    <div class="col-12 mt-4">
+                                                                        <label class="form-label-edit">Class Rank</label>
+                                                                        <input type="number" min="{{ array_key_first($classes_ranks) }}" max="{{ array_key_last($classes_ranks) }}" required class="form-control" placeholder="Class Rank" name="rank" value="{{ $data->rank }}">
                                                                     </div>
                                                                 </div>
                                                                 
