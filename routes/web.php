@@ -68,11 +68,10 @@ Route::middleware(['language', 'auth', 'UnderMaintenance'])
         Route::get('/', function () {
             return redirect(route('school.dashboard'));
         });
+
         // dashboard
-      
         Route::get('/dashboard', [App\Http\Controllers\SchoolController::class, 'school'])->name('school.dashboard');
-        Route::get('/session/update', [SessionController::class, 'sessionCreate'])->name('session.create');
-        Route::get('/new/class', [App\Http\Controllers\SessionController::class, 'newClass']);
+        Route::get('/session/update/{class?}', [SessionController::class, 'sessionCreate'])->name('session.create');
 
         // school Profile
         Route::get("/profile", [SettingsController::class, 'school_profile'])->name('school.profile');
@@ -928,4 +927,3 @@ Route::get('/admin/down', function () {
     Artisan::call('down');
     return redirect('/');
 })->name('server.down');
-

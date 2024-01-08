@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 
@@ -11,9 +12,7 @@ class InstituteClass extends Model
 {
     use HasFactory,SoftDeletes;
 
-    protected $guarded = [
-    ];
-
+    protected $guarded = [];
 
     /**
      * Relation with Mark Type
@@ -30,12 +29,16 @@ class InstituteClass extends Model
         return $this->hasMany(schoolManualMarkType::class, 'institute_class_id', 'id');
     }
 
-
     /**
      * relation with section
      */
     public function section()
     {
         return $this->hasMany(Section::class, 'class_id')->select('id','class_id','section_name');
+    }
+
+    public function students() : HasMany
+    {
+        return $this->hasMany(User::class, 'class_id', 'id');
     }
 }
