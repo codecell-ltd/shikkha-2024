@@ -167,7 +167,7 @@ class ResultController extends Controller
                     $term = ResultSetting::where('school_id', authUser()->id)
                         ->where('id', $request->student_wise_term_id)->first();
 
-                    $studentResults = Result::where('school_id', authUser()->id)
+                   $studentResults = Result::where('school_id', authUser()->id)
                         ->where('institute_class_id', $request->student_wise_class_id)
                         ->where('student_id', $request->student_wise_student_id)
                         ->where('term_id', $request->student_wise_term_id)
@@ -256,7 +256,7 @@ class ResultController extends Controller
                     $subject_bangla = [];
                     $subject_english1_english2 = [];
                     $subject_english = [];
-
+            
                     foreach ($studentResults as $key => $result) {
                         if(!is_null($result->term) && !is_null($result->subject)
                         &&
@@ -291,37 +291,41 @@ class ResultController extends Controller
                             }
                         }
                     }
-
+            
                     $iteration = 1;
                     foreach ($subject_bangla1_bangla2 as $all_terms) {
                         foreach ($all_terms as $key => $term) {
                             if($iteration > 1) {
-                                $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
-                                $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
-                                $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
-                                $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
-                                $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                                if(isset($subject_bangla['Bangla'][$key])){
+                                    $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
+                                    $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
+                                    $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
+                                    $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
+                                    $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                                }
                             }else $subject_bangla['Bangla'][$key] = $term;
-
+            
                         }
                         $iteration++;
                     }
-
+            
                     $iteration = 1;
                     foreach ($subject_english1_english2 as $all_terms) {
                         foreach ($all_terms as $key => $term) {
                             if($iteration > 1) {
-                                $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
-                                $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
-                                $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
-                                $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
-                                $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                                if(isset($subject_english['English'][$key])){
+                                    $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
+                                    $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
+                                    $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
+                                    $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
+                                    $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                                }
                             }else $subject_english['English'][$key] = $term;
-
+            
                         }
                         $iteration++;
                     }
-
+            
                     $subjects = array_merge($subject_bangla, $subject_english, $subjects);
 
                     $rank = Result::select('student_id')->selectRaw("SUM(total) as finalTotal")
@@ -380,7 +384,9 @@ class ResultController extends Controller
                 if ($attendanceCount != count($classResults)) {
                     $classResults = $classResults;
                     $attendanceNotEqual = 1;
-                } else {
+                    
+                } 
+                else {
                     $classResults = Result::leftJoin('custom_attendance_input as attendance', 'results.student_id', '=', 'attendance.user_id')
                         ->whereNotIn('results.student_id', $students)
                         ->where('results.school_id', authUser()->id)
@@ -389,7 +395,6 @@ class ResultController extends Controller
                         ->where('term_id', $request->class_wise_term_id)
                         ->where('attendance.result_setting_id', $request->class_wise_term_id)
                         ->get()->groupBy('student_id');
-
                     $attendanceNotEqual = 0;
                 }
 
@@ -410,9 +415,11 @@ class ResultController extends Controller
                                 $optionalResult = $data->whereIn('subject_id', $optionalSubjectId)->first();
                                 $not = $optionalResult->subject_id == $results->subject_id;
                                 if (!$not) {
+                                    
                                     if (gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0) $resultStatus = 0;
                                 }
-                            } else {
+                            } 
+                            else {
                                 if (gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0) $resultStatus = 0;
                             }
                             // if( gpa($results->mcq, $results->written, $results->practical, $results->total, $term, $class, $results->subject_id) == 0 ) {
@@ -442,7 +449,7 @@ class ResultController extends Controller
                         $totalGpa = $totalSubject != 0 ? number_format($totalGpa / $totalSubject, 2) : 1;
                     }
 
-                    $arrOfResult[][$total] = [
+                     $arrOfResult[][$total] = [
                         'total'                  => $total,
                         'totalGpa'               => $totalGpa,
                         'resultStatus'           => $resultStatus,
@@ -456,8 +463,9 @@ class ResultController extends Controller
                 $failStudent = [];
                 $arraySize = sizeof($arrOfResult);
                 $sortedArrayOfResult = collect($arrOfResult)->sortByDesc('total');
-
+               
                 foreach ($arrOfResult as $key => $results) {
+                    
                     foreach ($results as $key => $result) {
                         if ($result['resultStatus'] == 1) {
                             $passStudent[] = $result;
@@ -583,11 +591,13 @@ class ResultController extends Controller
         foreach ($subject_bangla1_bangla2 as $all_terms) {
             foreach ($all_terms as $key => $term) {
                 if($iteration > 1) {
-                    $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
-                    $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
-                    $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
-                    $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
-                    $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                    if(isset($subject_bangla['Bangla'][$key])){
+                        $subject_bangla['Bangla'][$key]['subject_id'] = [$subject_bangla['Bangla'][$key]['subject_id'], $term['subject_id']];
+                        $subject_bangla['Bangla'][$key]['total'] = ($subject_bangla['Bangla'][$key]['total'] + $term['total']) / 2;
+                        $subject_bangla['Bangla'][$key]['written'] = ($subject_bangla['Bangla'][$key]['written'] + $term['written']) / 2;
+                        $subject_bangla['Bangla'][$key]['mcq'] = ($subject_bangla['Bangla'][$key]['mcq'] + $term['mcq']) / 2;
+                        $subject_bangla['Bangla'][$key]['other'] = ($subject_bangla['Bangla'][$key]['other'] + $term['other']) / 2;
+                    }
                 }else $subject_bangla['Bangla'][$key] = $term;
 
             }
@@ -598,11 +608,13 @@ class ResultController extends Controller
         foreach ($subject_english1_english2 as $all_terms) {
             foreach ($all_terms as $key => $term) {
                 if($iteration > 1) {
-                    $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
-                    $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
-                    $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
-                    $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
-                    $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                    if(isset($subject_english['English'][$key])){
+                        $subject_english['English'][$key]['subject_id'] = [$subject_english['English'][$key]['subject_id'], $term['subject_id']];
+                        $subject_english['English'][$key]['total'] = ($subject_english['English'][$key]['total'] + $term['total']) / 2;
+                        $subject_english['English'][$key]['written'] = ($subject_english['English'][$key]['written'] + $term['written']) / 2;
+                        $subject_english['English'][$key]['mcq'] = ($subject_english['English'][$key]['mcq'] + $term['mcq']) / 2;
+                        $subject_english['English'][$key]['other'] = ($subject_english['English'][$key]['other'] + $term['other']) / 2;
+                    }
                 }else $subject_english['English'][$key] = $term;
 
             }
