@@ -27,7 +27,7 @@
                                             <th scope="col">New Roll <sup class="text-danger">*</sup></th>
                                             <th scope="col">New Section <sup class="text-danger">*</sup></th>
                                             @if ($has_group)
-                                                <th scope="col">Group</th>
+                                                <th scope="col" hidden>Group</th>
                                             @endif
                                         </tr>
                                     </thead>
@@ -53,7 +53,7 @@
                                                     </select>
                                                 </td>
                                                 @if ($has_group)
-                                                    <td>
+                                                    <td hidden>
                                                         <select class="form-control" onchange="subjectShow()" name="group_id">
                                                             <option value="" disabled selected>--------------</option>
                                                             <option value="1" @if (isset($studentEdit)) @if ($studentEdit->group_id == 1){{ 'selected' }} @endif @endif > Science </option>
