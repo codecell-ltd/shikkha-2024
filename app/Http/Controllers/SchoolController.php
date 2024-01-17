@@ -2961,9 +2961,6 @@ class SchoolController extends Controller
         }
     }
 
-
-
-
     //upload Excel file for student
 
     public function studentUpload(Request $request)
@@ -3276,7 +3273,6 @@ class SchoolController extends Controller
     }
 
     public function attendanceShowDateAll($class_id, $section_id, $group_id, $date)
-
     {
         if (hasPermission('student_attendance_dashboard')) {
             if (authUser()->status == 0) {
@@ -3289,7 +3285,7 @@ class SchoolController extends Controller
                 return back();
             } else {
                 $group_id = ($group_id == 0) ? NULL : $group_id;
-                $dataAttendance = Attendance::where('class_id', $class_id)->where('section_id', $section_id)->whereDate('created_at', $date)->get();
+                $dataAttendance = Attendance::where('class_id', $class_id)->where('section_id', $section_id)->whereDate('created_at', 'LIKE', '%%')->get();
                 $dataShow = User::where('class_id', $class_id)->where('section_id', $section_id)->orderBy('roll_number', 'Asc')->get();
                 $Text = 'Attendance Input create';
                 $seoTitle = 'Student Attendance Monthly';

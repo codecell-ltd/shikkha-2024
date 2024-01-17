@@ -91,8 +91,8 @@
                                         <tbody>
                                         @foreach($dataAttendance as $key => $data)
                                             <tr>
-                                                <td>{{getStaffName($data->teacher_id)->full_name}}</td>
-                                                <td>{{getStaffName($data->teacher_id)->unique_id}}</td>
+                                                <td>{{ $data->teacher->full_name}}</td>
+                                                <td>{{ $data->teacher->unique_id}}</td>
                                                 <td>{{($data->attendance == 1 ) ? 'Present' : 'Absent'}}</td>
                                                 @if(is_null(Request::segment(6)))
                                                 <td><form method="post" action="" enctype="multipart/form-data">
@@ -230,7 +230,6 @@
                                             <td style="padding: 0px;"> {!!getTeacherData($data->id,$date,'29')!!}</td>
                                             <td style="padding: 0px;"> {!!getTeacherData($data->id,$date,'30')!!}</td>
                                             <td style="padding: 0px;"> {!!getTeacherData($data->id,$date,'31')!!}</td>
-
                                         </tr>
                                     @endforeach
                                     </tbody>

@@ -12,14 +12,14 @@ class SessionController extends Controller
     {
       /**
        * update(['last_session_updated_year' => 2023]) DB classes which does not have any student to update their session. (For the first time on Live SQL - Hridoy)
-    //   $classes_has_student = InstituteClass::with('students')->has('students')->get()->pluck('id');
-    //   InstituteClass::with('students')->whereNotIn('id', $classes_has_student)->update(['last_session_updated_year' => 2023]);
-    //   return InstituteClass::with('students')->whereNotIn('id', $classes_has_student)->get();
+         $classes_has_student = InstituteClass::with('students')->has('students')->get()->pluck('id');
+         InstituteClass::with('students')->whereNotIn('id', $classes_has_student)->update(['last_session_updated_year' => 2023]);
+         return InstituteClass::with('students')->whereNotIn('id', $classes_has_student)->get();
        */
 
       if($request->class_id){
         $class = InstituteClass::find($request->class_id);
-        $next_class = InstituteClass::where('school_id', authUser()->id)->whereRank($class->rank + 1)->first();
+        $next_class = InstituteClass::with('section')->where('school_id', authUser()->id)->whereRank($class->rank + 1)->first();
 
         if(!empty($next_class)){
           if($request->update_session){
@@ -42,8 +42,11 @@ class SessionController extends Controller
     
             toast('Session updated successfully for this class.', 'success');
           }else {
+            $has_group = false;
+            if (in_array($next_class->class_name, classFilter())) $has_group = true;
+            
             $students = User::whereSchoolId(authUser()->id)->orderBy('roll_number', 'ASC')->whereClassId($request->class_id)->get();
-            return view('frontend.school.Session.student_list', compact('students', 'class', 'next_class'));
+            return view('frontend.school.Session.student_list', compact('students', 'class', 'next_class', 'has_group'));
           }
         }else toast('Next class not available.', 'error');
         return redirect()->route('session.create');
