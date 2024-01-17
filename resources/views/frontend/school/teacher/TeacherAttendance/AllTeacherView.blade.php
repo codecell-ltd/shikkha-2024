@@ -14,9 +14,9 @@
                                     @include('frontend.layouts.message')
                                 </div>
                                 <div class="col-12">
-                                    {{-- <label class="select-form">{{ __('app.Month') }}</label> --}}
-                                    <label class="select-form">{{ __('app.Month') }}</label>
-                                    <select class="form-control mb-3 js-select" id="month_id" name="month_id" required>
+                                    <label class="select-form">Select Month-Year</label>
+                                    <input type="month" id="month_id" name="month_id" required value="{{ date('Y-m') }}" class="form-control">
+                                    <!-- <select class="form-control mb-3 js-select" >
                                         <option value="" selected>Select one</option>
                                         <option value="01">January</option>
                                         <option value="02">February</option>
@@ -30,8 +30,7 @@
                                         <option value="10">October</option>
                                         <option value="11">November</option>
                                         <option value="12">December</option>
-                                    </select>
-
+                                    </select> -->
                                 </div>
                                 <div class="col-12">
                                     <div class="d-grid">

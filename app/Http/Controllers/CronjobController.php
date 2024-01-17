@@ -37,7 +37,6 @@ class CronjobController extends Controller
 
             try
             {
-                
                 foreach($schools as $key => $school)
                 {
                     // if device is connected

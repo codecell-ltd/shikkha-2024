@@ -124,6 +124,7 @@ Route::middleware(['language', 'auth', 'UnderMaintenance'])
         // fingerprint device (stellar)
         Route::get('device', [DeviceController::class, 'index'])->name('device.index');
         Route::post('device/fetch-log', [DeviceController::class, 'getFetchLog'])->name('device.fetch.log');
+
         Route::post('device/update', [DeviceController::class, 'update'])->name('device.update');
         Route::get("get/attendance", [AttendanceController::class, 'getAttendanceFromDevice'])->name('get.attendance.device');
 

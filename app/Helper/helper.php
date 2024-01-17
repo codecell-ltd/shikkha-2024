@@ -402,7 +402,7 @@ function getStaffData($employee_id,$month_id,$id)
 function getTeacherData($teacher_id,$month_id,$id)
 {
     
-    $dateS  = date("Y").'-'.$month_id.'-'.$id;
+    $dateS = $month_id.'-'.$id;
     $dateStaff = \App\Models\TeacherAttendance::where('teacher_id',$teacher_id)
         ->whereDate('created_at', $dateS)
         ->first();
