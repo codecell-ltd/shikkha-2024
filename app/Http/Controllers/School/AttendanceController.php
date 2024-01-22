@@ -663,7 +663,8 @@ class AttendanceController extends Controller
         }
     }
 
-    public function TeacherAttendance_Month($date){
+    public function TeacherAttendance_Month($date)
+    {
         if(hasPermission('teacher_view_attendance')){
             $seoTitle = 'Teacher Attendance Monthly';
             $seoDescription = 'Teacher Attendance Monthly';
@@ -677,12 +678,7 @@ class AttendanceController extends Controller
             $dataAttendance = TeacherAttendance::where("school_id", authUser()->id)->whereDate('created_at', $date)->get();
             $dataShow = Teacher::where("school_id", authUser()->id)->get();
             return view('frontend.school.teacher.TeacherAttendance.TeacherMonthView',compact('school','dataAttendance','dataShow','date','seo_array'));
-       
-        }
-        else{
-            return back();
-        }
-        
+        }else return back();
     }
 
     public function Teacher_confirmabsentpresent(Request $request, $id){

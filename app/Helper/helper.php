@@ -362,7 +362,7 @@ function getAttData($student_id,$class_id,$section_id,$group_id,$month_id,$id)
         // $fData = '<span class="cursor-pointer" title="'.date('g:i:s A', strtotime($dateStudent->access_time)).'">✅</span>';
     }
     elseif($dateStudent->attendance == 0){
-        $fData = '';
+        $fData = '❌';
     }
     elseif($dateStudent->attendance == 2){
         $fData = '⛔';
@@ -402,7 +402,7 @@ function getStaffData($employee_id,$month_id,$id)
 function getTeacherData($teacher_id,$month_id,$id)
 {
     
-    $dateS = $month_id.'-'.$id;
+    $dateS  = $month_id.'-'.$id;
     $dateStaff = \App\Models\TeacherAttendance::where('teacher_id',$teacher_id)
         ->whereDate('created_at', $dateS)
         ->first();
@@ -777,17 +777,13 @@ function gradeTeacher($mcq, $written, $practical, $total, $result_setting_id, $c
  */
 function annualGrade($total)
 {
-    $grading_scale = ['A+' => [80, 'text-success'],
-                      'A'  => [70, 'text-info'],
-                      'A-' => [60, 'text-info'],
-                      'B'  => [50, 'text-info'],
-                      'C'  => [40, 'text-info'],
-                      'D'  => [33, 'text-info'],
-                      'F'  => [0, 'text-danger']];
+    $grading_scale = array(
+        'A+' => 80, 'A' => 70, 'A-' => 60, 'B' => 50, 'C' => 40, 'D' => 33, 'F' => 0
+    );
 
     foreach ($grading_scale as $grade => $minimum_score) {
-        if ($total >= $minimum_score[0]) {
-            return "<b class='{$minimum_score[1]}'>{$grade}</b>";
+        if ($total >= $minimum_score) {
+            return $grade;
         }
     }
 }
@@ -943,28 +939,18 @@ function finalGpa($total, $schoolId = null)
 /**
  * Class Wise Result All Student GPA
  */
-
 function classWiseGpa($total)
 {
-    $grading_point =[
+    $grading_point = array(
+        'A+' => 5, 'A' => 4, 'A-' => 3.5, 'B' => 3, 'C' => 2, 'D' => 1, 'F' => 0
+    );
 
-        'A+' => [5, 'text-success'],
-        'A'  => [4, 'text-info'],
-        'A-' => [3.5,'text-info'],
-        'B'  => [3, 'text-info'],
-        'C'  => [2, 'text-info'],
-        'D'  => [1, 'text-info'],
-        'F'  => [0, 'text-danger']
-    ];
     foreach ($grading_point as $gpa => $minimum_score) {
-        if ($total >= $minimum_score[0]) {
-            return "<b class='{$minimum_score[1]}'>{$gpa}</b>";
+        if ($total >= $minimum_score) {
+            return $gpa;
         }
     }
- 
-
 }
-
 
 /**
  * class wise pass fail

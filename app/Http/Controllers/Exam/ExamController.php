@@ -205,20 +205,20 @@ class ExamController extends Controller
     }
 
     // Admit Card Download
-    public function showAdmitCardDownload(Request $request){
-        //  return $request -> term_id;
+    public function showAdmitCardDownload(Request $request)
+    {
         $request->validate([
             'term_id' => 'required',
             'class_id' => 'required',
         ]);
 
         $term = ResultSetting::find($request -> term_id)->title;
-        if($request->section_id){
-            $student = User::where('school_id', authUser()->id)->where('class_id', $request->class_id)->where('section_id', $request->section_id)->get();
-        }
-        else{
-            $student = User::where('school_id', authUser()->id)->where('class_id', $request->class_id)->get();
-        }
+
+        # Hridoy
+        $sql = User::where('school_id', authUser()->id)->where('class_id', $request->class_id);
+        if($request->section_id) $student = $sql->where('section_id', $request->section_id)->get();
+        else $student = $sql->get();
+        
         $class = InstituteClass::find($request -> class_id)->class_name;
         $subject = Subject::where('school_id', authUser()->id)->where('class_id', $request->class_id)->get();
         $year = Carbon::now()->format('Y');

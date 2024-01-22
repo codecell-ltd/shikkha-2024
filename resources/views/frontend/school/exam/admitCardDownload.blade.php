@@ -218,7 +218,7 @@
                                     {{-- signature --}}
                                         
                                         <div class="row d-flex justify-content-center">
-                                            <div class="col-6" style="font-size: 12px;margin-bottom:none;padding:none;">
+                                            <div class="col-6" style="font-size: 12px; margin-bottom:none; padding:none; margin-top: 100px;">
                                                 <table class="table text-center" style="border-color: black;">
                                                     
                                                     <tbody>
